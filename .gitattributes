@@ -1,0 +1,14 @@
+# Normalise line endings so the repo behaves identically on Windows and Linux.
+* text=auto eol=lf
+
+*.cs      text diff=csharp
+*.csproj  text
+*.sln     text eol=crlf
+*.json    text
+*.md      text
+*.yml     text
+*.yaml    text
+
+*.png     binary
+*.jpg     binary
+*.ico     binary
