@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useEffectEvent } from "@/src/lib/useEffectEvent";
 
 /**
  * Polls an async source on an interval and exposes enough state for the
@@ -15,12 +14,12 @@ import { useEffectEvent } from "@/src/lib/useEffectEvent";
  *   3. a failure count that survives a single blip,
  *   4. cancellation of in-flight work on unmount.
  *
- * Polling pauses while the tab is hidden and resumes with an immediate fetch
- * when it becomes visible again, so a background tab does not hammer the API.
+ * Polling pauses while the tab is hidden and reads immediately when it becomes
+ * visible again, so a background tab does not hammer the API.
  */
 export interface PollState<T> {
   data: T | null;
-  /** The read currently in flight. */
+  /** A read is currently in flight. */
   isFetching: boolean;
   /** True only until the first result arrives. */
   isLoading: boolean;
@@ -45,14 +44,18 @@ export function usePolling<T>(
   const [failures, setFailures] = useState(0);
   const [error, setError] = useState<Error | null>(null);
 
-  // A ref, not state: the interval callback must never see a stale fetcher, and
-  // changing the fetcher must not restart the timer.
+  // Refs, not state: the loop must always call the newest fetcher without
+  // restarting, and must be able to stop itself on unmount.
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
-
   const inFlight = useRef(false);
   const alive = useRef(true);
   const timer = useRef<number | null>(null);
+
+  // Keep the ref current in an effect rather than during render, so the
+  // component stays a pure function of its props.
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   useEffect(() => {
     alive.current = true;
@@ -61,9 +64,9 @@ export function usePolling<T>(
     };
   }, []);
 
-  const run = useEffectEvent(async () => {
-    // Overlapping polls would stack up on a slow server; a skipped tick is
-    // better than a queue of them.
+  const run = useCallback(async () => {
+    // Overlapping polls would stack up against a slow server; skipping a tick
+    // is better than queueing one.
     if (inFlight.current) return;
     inFlight.current = true;
     setIsFetching(true);
@@ -86,53 +89,49 @@ export function usePolling<T>(
       }
       inFlight.current = false;
     }
-  });
-
-  const schedule = useEffectEvent(() => {
-    if (timer.current !== null) window.clearTimeout(timer.current);
-    const tick = () => {
-      timer.current = null;
-      if (document.hidden) {
-        schedule();
-        return;
-      }
-      void run().finally(() => {
-        if (alive.current) schedule();
-      });
-    };
-    timer.current = window.setTimeout(tick, intervalMs);
-  });
+  }, []);
 
   useEffect(() => {
-    void run();
-    schedule();
+    let cancelled = false;
 
-    const onVisibility = () => {
+    // One self-scheduling chain, so a slow response delays the next tick
+    // instead of piling up behind it.
+    const tick = async () => {
+      if (cancelled) return;
+      if (!document.hidden) {
+        await run();
+      }
+      if (cancelled || !alive.current) return;
+      timer.current = window.setTimeout(tick, intervalMs);
+    };
+
+    void tick();
+
+    const onWake = () => {
       if (document.hidden) return;
-      // Coming back to the tab: the data is certainly stale, so read at once
-      // rather than waiting out the remainder of the interval.
+      // Returning to the tab: the data is certainly stale, so read at once
+      // rather than waiting out the rest of the interval.
       void run();
     };
 
-    window.addEventListener("focus", onVisibility);
-    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
 
     return () => {
-      window.removeEventListener("focus", onVisibility);
-      document.removeEventListener("visibilitychange", onVisibility);
-      if (timer.current !== null) window.clearTimeout(timer.current);
+      cancelled = true;
+      window.removeEventListener("focus", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+      if (timer.current !== null) {
+        window.clearTimeout(timer.current);
+        timer.current = null;
+      }
     };
-    // `run` and `schedule` are effect events: stable by construction.
-  }, [intervalMs]);
+  }, [intervalMs, run]);
 
-  const refresh = useCallback(() => {
-    void run();
-  }, [run]);
-
-  return { data, isFetching, isLoading, lastCheckedAt, failures, error, refresh };
+  return { data, isFetching, isLoading, lastCheckedAt, failures, error, refresh: run };
 }
 
-/** A clock that ticks once a second, for countdowns. */
+/** A clock that ticks once a second, for countdowns and freshness labels. */
 export function useNow(intervalMs = 1000): number {
   const [now, setNow] = useState(() => Date.now());
 

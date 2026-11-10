@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   RiBookOpenLine,
   RiLayoutGridLine,
@@ -45,19 +45,22 @@ function Shell() {
   // A hold that was HELD on the previous read and is EXPIRED now is worth a
   // single, quiet notice — the card already changed, so the toast confirms it
   // rather than announcing it from nowhere.
-  const [previousStatuses, setPreviousStatuses] = useState<Map<string, string>>(new Map());
+  //
+  // Tracked with a ref rather than state: the previous statuses are not
+  // rendered, and putting them in state would make this effect re-run against
+  // its own write.
+  const previousStatuses = useRef<Map<string, string>>(new Map());
   useEffect(() => {
     if (!holds.data) return;
-    const now = new Map(holds.data.map((hold) => [hold.holdId, hold.status]));
-    for (const [holdId, status] of now) {
-      if (previousStatuses.get(holdId) === "HELD" && status === "EXPIRED") {
+    const next = new Map(holds.data.map((hold) => [hold.holdId, hold.status]));
+    for (const [holdId, status] of next) {
+      if (previousStatuses.current.get(holdId) === "HELD" && status === "EXPIRED") {
         toast.info(t.toast.expired, { description: t.toast.expiredBody });
         break;
       }
     }
-    setPreviousStatuses(now);
-    // Intentionally keyed on the data reference only.
-  }, [holds.data]);
+    previousStatuses.current = next;
+  }, [holds.data, t.toast.expired, t.toast.expiredBody]);
 
   const myHolds = holds.data ?? [];
 

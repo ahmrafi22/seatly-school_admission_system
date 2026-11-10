@@ -1,5 +1,6 @@
 import { cx } from "@/utils/cx";
 import { useI18n } from "@/src/i18n/LanguageProvider";
+import { useNow } from "@/src/lib/usePolling";
 
 /**
  * How current the numbers on screen are.
@@ -27,9 +28,12 @@ export function Freshness({
   className?: string;
 }) {
   const { t, isBangla } = useI18n();
+  // A clock, so "updated 3s ago" actually counts up between polls. Reading
+  // Date.now() during render would freeze the label until the next fetch.
+  const now = useNow(1000);
 
   const offline = failures >= 2;
-  const age = lastCheckedAt === null ? null : Date.now() - lastCheckedAt;
+  const age = lastCheckedAt === null ? null : now - lastCheckedAt;
 
   let text: string;
   let tone: "live" | "working" | "offline";
