@@ -1,0 +1,218 @@
+/* ---------------------------------------------------------------------------
+ * GetSeatly — application theme layer
+ *
+ * Loaded after the BoardUI foundations. It re-tints the accent ramp to a deep
+ * pine, warms the neutral ramp, and sets the type stacks. Nothing here edits a
+ * BoardUI file; every value is a token override, so light/dark still flips
+ * through the `.dark` class exactly as the kit intends.
+ * ------------------------------------------------------------------------- */
+
+@theme {
+  /* ---- Accent: deep pine ---------------------------------------------------
+   * Education and availability. Deliberately not the default blue and never
+   * violet. Every CTA, focus ring and selection state in BoardUI reads from
+   * this ramp, so one change re-tints the whole product. */
+  --color-accent-50: #eff8f6;
+  --color-accent-100: #d7eeea;
+  --color-accent-200: #aeddd7;
+  --color-accent-300: #7cc4bd;
+  --color-accent-400: #4aa7a0;
+  --color-accent-500: #2b8b85;
+  --color-accent-600: #1e706c;
+  --color-accent-700: #1a5a58;
+  --color-accent-800: #174947;
+  --color-accent-900: #143c3b;
+  --color-accent-950: #082322;
+
+  /* ---- Warm neutral ramp ---------------------------------------------------
+   * The kit ships cool greys. A slightly warm ramp sits better against pine
+   * and keeps long reading surfaces from feeling clinical. */
+  --color-neutral-50: #faf9f6;
+  --color-neutral-100: #f4f2ed;
+  --color-neutral-200: #e8e5dd;
+  --color-neutral-300: #d5d1c7;
+  --color-neutral-400: #a8a49a;
+  --color-neutral-500: #78756c;
+  --color-neutral-600: #56534c;
+  --color-neutral-700: #403d38;
+  --color-neutral-800: #2a2825;
+  --color-neutral-900: #1c1a18;
+  --color-neutral-925: #131211;
+  --color-neutral-950: #0c0b0a;
+
+  /* ---- Type ---------------------------------------------------------------
+   * Poppins for display and figures, Inter for interface text. Both fall back
+   * to Hind Siliguri, which carries the Bengali glyphs neither of the Latin
+   * faces has — so a single stack handles both languages. */
+  --font-sans: "Inter", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-bangla: "Hind Siliguri", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* ---- Seat inventory -----------------------------------------------------
+   * One colour per part of a class's inventory, so the bar and the chips speak
+   * the same language everywhere. */
+  --color-seat-confirmed: var(--color-accent-700);
+  --color-seat-held: var(--color-accent-300);
+  --color-seat-free: var(--color-neutral-200);
+}
+
+/* Warm the page ground a step away from pure white so white cards lift. */
+:root {
+  --color-background-full: #fbfaf7;
+  --color-seat-free: var(--color-neutral-200);
+}
+
+.dark {
+  --color-background-full: #0e1111;
+  --color-seat-confirmed: var(--color-accent-400);
+  --color-seat-held: var(--color-accent-700);
+  --color-seat-free: var(--color-neutral-800);
+}
+
+/* ---------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-feature-settings: "cv05" 1, "ss01" 1;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-200);
+    color: var(--color-accent-950);
+  }
+
+  .dark ::selection {
+    background-color: var(--color-accent-800);
+    color: var(--color-accent-50);
+  }
+
+  /* Numbers in a table or a countdown must not jitter as they tick. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* The 17-digit registration number is a code, not prose. */
+  .id-code {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  /* A single, consistent scrollbar. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neutral-300) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: var(--color-neutral-700) transparent;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Utilities
+ * ------------------------------------------------------------------------- */
+
+@utility text-display-1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 1.35rem + 2.4vw, 3rem);
+  line-height: 1.06;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+@utility text-display-2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.375rem, 1.15rem + 0.85vw, 1.75rem);
+  line-height: 1.16;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* A figure that is the point of its block: seats available, days left. */
+@utility text-figure {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* Hairline that reads as a fold rather than a box edge. */
+@utility rule-hairline {
+  border-color: var(--color-separator-border);
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion
+ *
+ * Small, physical, and honest: a card lifts 1px on hover, a button steps on
+ * press, an arriving row rises once. Everything rests under reduced motion.
+ * ------------------------------------------------------------------------- */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-rise {
+  animation: rise-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A seat bar segment that changed width eases to its new value. */
+.seat-segment {
+  transition: flex-grow 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The live dot next to the freshness label. */
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.75);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: currentColor;
+  animation: pulse-ring 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none;
+  }
+  .seat-segment {
+    transition: none;
+  }
+  .live-dot::after {
+    animation: none;
+    opacity: 0;
+  }
+}
