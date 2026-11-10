@@ -59,6 +59,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ---------------------------------------------------------------------------
+// Schema — apply pending migrations on boot so `docker compose up` needs no
+// manual step. Retries because Postgres may still be starting.
+// ---------------------------------------------------------------------------
+await ApplyMigrationsAsync(app);
+
+// ---------------------------------------------------------------------------
 // Pipeline
 // ---------------------------------------------------------------------------
 app.UseExceptionHandler();
@@ -81,6 +87,41 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 app.Run();
+
+/// <summary>
+/// Applies pending migrations, retrying while the database comes up.
+/// Concurrent instances are safe: EF Core takes an advisory lock.
+/// </summary>
+static async Task ApplyMigrationsAsync(WebApplication app)
+{
+    var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+    const int maxAttempts = 10;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            await using var scope = app.Services.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied.");
+            return;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            var delay = TimeSpan.FromSeconds(Math.Min(attempt * 2, 10));
+            logger.LogWarning(
+                "Database not ready (attempt {Attempt}/{Max}): {Message}. Retrying in {Delay}s.",
+                attempt, maxAttempts, ex.Message, delay.TotalSeconds);
+            await Task.Delay(delay);
+        }
+    }
+
+    // Final attempt: let the exception surface so the container fails loudly.
+    await using var finalScope = app.Services.CreateAsyncScope();
+    var finalDb = finalScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await finalDb.Database.MigrateAsync();
+}
 
 /// <summary>Exposed so integration tests can use WebApplicationFactory.</summary>
 public partial class Program;
