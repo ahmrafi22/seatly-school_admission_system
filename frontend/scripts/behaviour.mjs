@@ -26,13 +26,10 @@ await page.waitForTimeout(3000);
 const countdownAfter = await page.locator("text=/Expires in/").first().textContent().catch(() => null);
 report.countdown = { before: countdownBefore, after: countdownAfter, ticking: countdownBefore !== countdownAfter };
 
-// ---- 2. Seat count actually moves in the class list without a reload ---------
-await page.click('nav[aria-label="Sections"] >> text=Classes');
-await page.waitForTimeout(1200);
-const classText1 = await page.locator("main").textContent();
-await page.waitForTimeout(5000);
-const classText2 = await page.locator("main").textContent();
-report.pollingChanges = classText1 !== classText2;
+// ---- 2. The freshness label is present and readable ------------------------
+// (Whether the counts actually move is covered by scripts/polling.mjs, which
+// changes the data out of band. Comparing two snapshots of an idle database
+// here would prove nothing.)
 report.freshnessVisible = await page.locator("text=/Updated/").first().isVisible().catch(() => false);
 
 // ---- 3. The 17-digit id survives a reload -----------------------------------
