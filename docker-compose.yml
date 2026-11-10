@@ -1,0 +1,90 @@
+# ------------------------------------------------------------------------------
+# GetSeatly — the whole stack, one command.
+#
+#   docker compose up --build
+#
+# Frontend  http://localhost:3000
+# Backend   http://localhost:8080
+# Database  postgres://postgres:postgres@localhost:5432/school_admission
+#
+# Nothing needs to be installed except Docker. The schema is created by the
+# API's migrations on first start.
+# ------------------------------------------------------------------------------
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: getseatly-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: school_admission
+      # Deterministic collation: index ordering must not depend on the host.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    volumes:
+      # A named volume, so `docker compose down` and `up` keep the data.
+      # Only `down -v` discards it, which is the explicit destructive action.
+      - db_data:/var/lib/postgresql/data
+    ports:
+      # Exposed so the API can also be run from a terminal against the same
+      # database during development. Remove this line to keep it private.
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d school_admission"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: getseatly-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        # The API retries migrations on its own, but waiting for a healthy
+        # database removes ten noisy log lines from a normal cold start.
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=school_admission;Username=postgres;Password=postgres"
+      HOLD_DURATION_SECONDS: "${HOLD_DURATION_SECONDS:-600}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # Relative: nginx proxies /api to the backend, so the browser talks to
+        # a single origin and CORS never applies.
+        VITE_API_BASE_URL: "/api"
+    container_name: getseatly-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  db_data:
+    name: getseatly_db_data
