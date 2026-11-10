@@ -1,0 +1,27 @@
+# Build output must never enter the image: a host `obj/` directory carries
+# project.assets.json with absolute paths from another machine, and it
+# overwrites the container's own restore.
+**/bin/
+**/obj/
+**/out/
+
+# Node
+**/node_modules/
+**/dist/
+**/shots/
+
+# Repositories and editor state
+**/.git/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/.cursor/
+
+# Local environment and secrets
+**/.env
+**/.env.local
+**/appsettings.Local.json
+
+# Documentation that is not needed to build
+**/*.md
+!README.md

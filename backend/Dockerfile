@@ -28,11 +28,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# A dedicated unprivileged user. The app never needs to write to its own
+# The aspnet image already ships an unprivileged `app` user (uid 1654). Reuse
+# it rather than creating another — the app never needs to write to its own
 # directory, so it has no reason to run as root.
-RUN groupadd --gid 64198 app \
-    && useradd --uid 64198 --gid app --create-home --shell /usr/sbin/nologin app
-
 COPY --from=build --chown=app:app /app/publish ./
 
 USER app
