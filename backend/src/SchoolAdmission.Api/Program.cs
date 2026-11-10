@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolAdmission.Api.Configuration;
 using SchoolAdmission.Api.Data;
+using SchoolAdmission.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +40,7 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? "Host=localhost;Port=5432;Database=school_admission;Username=postgres;Password=postgres";
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddScoped<SeatAllocationService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
