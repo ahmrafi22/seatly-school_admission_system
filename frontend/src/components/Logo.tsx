@@ -1,4 +1,5 @@
 import { cx } from "@/utils/cx";
+import { useI18n } from "@/src/i18n/LanguageProvider";
 
 /**
  * The wordmark. A seat seen from the front: a rounded square with a slot cut
@@ -28,12 +29,13 @@ export function LogoMark({ className }: { className?: string }) {
 }
 
 export function Logo({ compact = false }: { compact?: boolean }) {
+  const { t } = useI18n();
   return (
     <span className="inline-flex items-center gap-2.5">
       <LogoMark />
       {!compact && (
         <span className="font-display text-[1.0625rem] leading-none font-semibold tracking-[-0.02em] text-text-primary">
-          GetSeatly
+          {t.brand}
         </span>
       )}
     </span>

@@ -13,7 +13,7 @@
 export type Lang = "en" | "bn";
 
 const en = {
-  brand: "GetSeatly",
+  brand: "Only Seatly.",
   brandTagline: "School admission, without the queue",
 
   common: {
@@ -43,13 +43,14 @@ const en = {
   identity: {
     title: "Your birth registration number",
     description:
-      "This 17-digit number is your identity here. It is stored on this device only, so you can close the browser and come back to your applications.",
+      "This {digits}-digit number is your identity here. It is stored on this device only, so you can close the browser and come back to your applications.",
     label: "Birth registration number",
-    placeholder: "17 digits",
-    hint: "Exactly 17 digits, as printed on the certificate.",
-    errorEmpty: "Enter your 17-digit birth registration number.",
-    errorShort: "That number is too short — it needs all 17 digits.",
-    errorLong: "That number is too long — it needs to be exactly 17 digits.",
+    remaining: "{n} digit to go",
+    placeholder: "{digits} digits",
+    hint: "Exactly {digits} digits, as printed on the certificate.",
+    errorEmpty: "Enter your {digits}-digit birth registration number.",
+    errorShort: "That number is too short — it needs all {digits} digits.",
+    errorLong: "That number is too long — it needs to be exactly {digits} digits.",
     errorFormat: "Use digits only, with no spaces or letters.",
     submit: "Continue",
     change: "Use a different number",
@@ -133,15 +134,15 @@ const en = {
     formTitle: "New class",
     nameLabel: "Class name",
     namePlaceholder: "Class 6 — Morning shift",
-    nameHint: "Up to 200 characters.",
+    nameHint: "Up to {max} characters.",
     seatsLabel: "Total seats",
-    seatsHint: "Between 1 and 10,000.",
+    seatsHint: "Between {min} and {max}.",
     create: "Create class",
     creating: "Creating…",
     created: "Class created",
     existing: "Existing classes",
     errorName: "Give the class a name.",
-    errorSeats: "Seats must be a whole number between 1 and 10,000.",
+    errorSeats: "Seats must be a whole number between {min} and {max}.",
   },
 
   freshness: {
@@ -170,7 +171,7 @@ const en = {
   },
 
   toast: {
-    holdCreated: "Seat held for 10 minutes",
+    holdCreated: "Seat held for {minutes} minutes",
     holdCreatedBody: "Confirm before the timer runs out or the seat is released.",
     confirmed: "Admission confirmed",
     confirmedBody: "The seat is now permanently yours.",
@@ -195,7 +196,7 @@ type DeepWiden<T> = T extends string
   : { [K in keyof T]: DeepWiden<T[K]> };
 
 const bn: Copy = {
-  brand: "GetSeatly",
+  brand: "Only Seatly.",
   brandTagline: "লাইনে দাঁড়ানো ছাড়াই স্কুলে ভর্তি",
 
   common: {
@@ -225,13 +226,14 @@ const bn: Copy = {
   identity: {
     title: "আপনার জন্ম নিবন্ধন নম্বর",
     description:
-      "এই ১৭ সংখ্যার নম্বরটিই এখানে আপনার পরিচয়। এটি শুধু এই ডিভাইসে সংরক্ষিত থাকে, তাই ব্রাউজার বন্ধ করেও ফিরে এসে নিজের আবেদন দেখতে পারবেন।",
+      "এই {digits} সংখ্যার নম্বরটিই এখানে আপনার পরিচয়। এটি শুধু এই ডিভাইসে সংরক্ষিত থাকে, তাই ব্রাউজার বন্ধ করেও ফিরে এসে নিজের আবেদন দেখতে পারবেন।",
     label: "জন্ম নিবন্ধন নম্বর",
-    placeholder: "১৭ সংখ্যা",
-    hint: "সনদে লেখা ঠিক ১৭ সংখ্যার নম্বরটি দিন।",
-    errorEmpty: "আপনার ১৭ সংখ্যার জন্ম নিবন্ধন নম্বরটি লিখুন।",
-    errorShort: "নম্বরটি ছোট — পুরো ১৭ সংখ্যা দরকার।",
-    errorLong: "নম্বরটি বড় — ঠিক ১৭ সংখ্যা হতে হবে।",
+    remaining: "{n} সংখ্যা বাকি",
+    placeholder: "{digits} সংখ্যা",
+    hint: "সনদে লেখা ঠিক {digits} সংখ্যার নম্বরটি দিন।",
+    errorEmpty: "আপনার {digits} সংখ্যার জন্ম নিবন্ধন নম্বরটি লিখুন।",
+    errorShort: "নম্বরটি ছোট — পুরো {digits} সংখ্যা দরকার।",
+    errorLong: "নম্বরটি বড় — ঠিক {digits} সংখ্যা হতে হবে।",
     errorFormat: "শুধু সংখ্যা লিখুন, ফাঁকা জায়গা বা অক্ষর নয়।",
     submit: "এগিয়ে যান",
     change: "অন্য নম্বর ব্যবহার করুন",
@@ -315,15 +317,15 @@ const bn: Copy = {
     formTitle: "নতুন ক্লাস",
     nameLabel: "ক্লাসের নাম",
     namePlaceholder: "ষষ্ঠ শ্রেণি — সকাল শিফট",
-    nameHint: "সর্বোচ্চ ২০০ অক্ষর।",
+    nameHint: "সর্বোচ্চ {max} অক্ষর।",
     seatsLabel: "মোট আসন",
-    seatsHint: "১ থেকে ১০,০০০ এর মধ্যে।",
+    seatsHint: "{min} থেকে {max} এর মধ্যে।",
     create: "ক্লাস তৈরি করুন",
     creating: "তৈরি হচ্ছে…",
     created: "ক্লাস তৈরি হয়েছে",
     existing: "বর্তমান ক্লাস",
     errorName: "ক্লাসের একটি নাম দিন।",
-    errorSeats: "আসন ১ থেকে ১০,০০০ এর মধ্যে পূর্ণসংখ্যা হতে হবে।",
+    errorSeats: "আসন {min} থেকে {max} এর মধ্যে পূর্ণসংখ্যা হতে হবে।",
   },
 
   freshness: {
@@ -352,7 +354,7 @@ const bn: Copy = {
   },
 
   toast: {
-    holdCreated: "১০ মিনিটের জন্য আসন সংরক্ষিত",
+    holdCreated: "{minutes} মিনিটের জন্য আসন সংরক্ষিত",
     holdCreatedBody: "সময় শেষ হওয়ার আগে নিশ্চিত করুন, নয়তো আসন ছেড়ে যাবে।",
     confirmed: "ভর্তি নিশ্চিত হয়েছে",
     confirmedBody: "আসনটি এখন স্থায়ীভাবে আপনার।",

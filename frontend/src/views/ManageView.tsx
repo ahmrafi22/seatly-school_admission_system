@@ -6,9 +6,14 @@ import { NumberField } from "@/components/base/number-field/number-field";
 import { useI18n } from "@/src/i18n/LanguageProvider";
 import { api, ApiError, type ClassSummary } from "@/src/lib/api";
 import { usePolling } from "@/src/lib/usePolling";
-import { localizeDigits } from "@/src/lib/format";
 import { SeatBar } from "@/src/components/SeatBar";
 import { Freshness } from "@/src/components/Freshness";
+
+// Mirrors the server's own limits, so the common mistakes are caught before a
+// round trip and the copy can name the exact bounds.
+const MAX_NAME = 200;
+const MIN_SEATS = 1;
+const MAX_SEATS = 10_000;
 
 /**
  * Class administration.
@@ -20,7 +25,7 @@ import { Freshness } from "@/src/components/Freshness";
  * server's message still wins if it disagrees.
  */
 export function ManageView({ onCreated }: { onCreated: () => void }) {
-  const { t, isBangla } = useI18n();
+  const { t, tpl, n } = useI18n();
   const [name, setName] = useState("");
   const [seats, setSeats] = useState<number>(40);
   const [errors, setErrors] = useState<{ name?: string; seats?: string }>({});
@@ -29,7 +34,6 @@ export function ManageView({ onCreated }: { onCreated: () => void }) {
   const [justCreated, setJustCreated] = useState<ClassSummary | null>(null);
 
   const classes = usePolling<ClassSummary[]>(() => api.listClasses(), 8_000);
-  const n = (value: number) => localizeDigits(value, isBangla ? "bn" : "en");
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -37,10 +41,12 @@ export function ManageView({ onCreated }: { onCreated: () => void }) {
 
     const trimmed = name.trim();
     if (trimmed.length === 0) nextErrors.name = t.manage.errorName;
-    else if (trimmed.length > 200) nextErrors.name = t.manage.errorName;
+    else if (trimmed.length > MAX_NAME) {
+      nextErrors.name = tpl(t.manage.nameHint, { max: MAX_NAME });
+    }
 
-    if (!Number.isInteger(seats) || seats < 1 || seats > 10_000) {
-      nextErrors.seats = t.manage.errorSeats;
+    if (!Number.isInteger(seats) || seats < MIN_SEATS || seats > MAX_SEATS) {
+      nextErrors.seats = tpl(t.manage.errorSeats, { min: MIN_SEATS, max: MAX_SEATS });
     }
 
     setErrors(nextErrors);
@@ -91,7 +97,7 @@ export function ManageView({ onCreated }: { onCreated: () => void }) {
             <Input
               label={t.manage.nameLabel}
               placeholder={t.manage.namePlaceholder}
-              hint={t.manage.nameHint}
+              hint={tpl(t.manage.nameHint, { max: MAX_NAME })}
               value={name}
               onChange={(next) => {
                 setName(next);
@@ -105,11 +111,11 @@ export function ManageView({ onCreated }: { onCreated: () => void }) {
 
             <NumberField
               label={t.manage.seatsLabel}
-              hint={t.manage.seatsHint}
+              hint={tpl(t.manage.seatsHint, { min: MIN_SEATS, max: MAX_SEATS })}
               value={seats}
               onChange={setSeats}
-              minValue={1}
-              maxValue={10_000}
+              minValue={MIN_SEATS}
+              maxValue={MAX_SEATS}
               step={1}
               isInvalid={Boolean(errors.seats)}
             />

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { dictionaries, type Copy, type Lang } from "@/src/i18n/copy";
+import { localizeDigits } from "@/src/lib/format";
 
 const LANG_KEY = "getseatly:lang";
 
@@ -18,6 +19,16 @@ interface LanguageContextValue {
   /** BCP 47 tag for Intl formatting. */
   locale: string;
   isBangla: boolean;
+  /**
+   * Fill `{name}` placeholders and localize any digit in the result.
+   *
+   * Copy holds no numerals of its own: the interface decides at render time
+   * whether a number reads as `17` or `১৭`, so a Bangla sentence shown in
+   * English mode cannot leak Bengali digits into it.
+   */
+  tpl: (template: string, vars?: Record<string, string | number>) => string;
+  /** A number, formatted for the current language. */
+  n: (value: number | string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -55,16 +66,38 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo<LanguageContextValue>(
-    () => ({
+  const value = useMemo<LanguageContextValue>(() => {
+    const n = (input: number | string) => {
+      // Group thousands the way each language writes them, then localize the
+      // digits. Without this, a limit reads "10000" in English and the
+      // separator disappears from every number the interface formats.
+      const formatted =
+        typeof input === "number"
+          ? new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(input)
+          : input;
+      return localizeDigits(formatted, lang);
+    };
+
+    const tpl = (template: string, vars?: Record<string, string | number>) => {
+      return template.replace(/\{(\w+)\}/g, (match, key: string) => {
+        const replacement = vars?.[key];
+        if (replacement === undefined) return match;
+        // Numbers go through the digit localizer; strings are left alone so a
+        // class name is never re-encoded.
+        return typeof replacement === "number" ? n(replacement) : replacement;
+      });
+    };
+
+    return {
       lang,
       setLang,
       t: dictionaries[lang],
       locale: lang === "bn" ? "bn-BD" : "en-GB",
       isBangla: lang === "bn",
-    }),
-    [lang, setLang],
-  );
+      tpl,
+      n,
+    };
+  }, [lang, setLang]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

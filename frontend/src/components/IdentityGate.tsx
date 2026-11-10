@@ -16,7 +16,7 @@ import { Toolbar } from "@/src/components/Toolbar";
  * rather than a red border alone.
  */
 export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => void }) {
-  const { t, isBangla } = useI18n();
+  const { t, tpl, isBangla } = useI18n();
   const [value, setValue] = useState("");
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,10 +28,12 @@ export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => vo
   const digitsOnly = value;
 
   const validate = (raw: string): string | null => {
-    if (raw.length === 0) return t.identity.errorEmpty;
+    if (raw.length === 0) return tpl(t.identity.errorEmpty, { digits: STUDENT_ID_LENGTH });
     if (/\D/.test(raw)) return t.identity.errorFormat;
-    if (raw.length < STUDENT_ID_LENGTH) return t.identity.errorShort;
-    if (raw.length > STUDENT_ID_LENGTH) return t.identity.errorLong;
+    if (raw.length < STUDENT_ID_LENGTH)
+      return tpl(t.identity.errorShort, { digits: STUDENT_ID_LENGTH });
+    if (raw.length > STUDENT_ID_LENGTH)
+      return tpl(t.identity.errorLong, { digits: STUDENT_ID_LENGTH });
     return null;
   };
 
@@ -61,24 +63,28 @@ export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => vo
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center px-5 pb-16 sm:px-8">
-        <div className="w-full max-w-[30rem]">
+        <div className="w-full max-w-[29rem]">
           <div className="animate-rise">
             <span className="inline-flex items-center gap-2 rounded-full border border-border-button-default bg-background-primary-default px-3 py-1 text-caption-1-semibold text-text-secondary shadow-card">
               <RiIdCardLine className="size-3.5 text-accent-600 dark:text-accent-400" aria-hidden />
               {t.brandTagline}
             </span>
 
-            <h1 className="mt-5 text-display-1 text-text-primary">
+            <h1 className="mt-5 text-display-1 text-balance text-text-primary">
               {t.identity.title}
             </h1>
             <p className="mt-3 max-w-[26rem] text-body-medium text-text-secondary">
-              {t.identity.description}
+              {tpl(t.identity.description, { digits: STUDENT_ID_LENGTH })}
             </p>
 
-            <form onSubmit={submit} noValidate className="mt-8">
+            <form
+              onSubmit={submit}
+              noValidate
+              className="mt-7 rounded-3xl border border-border-button-default bg-background-primary-default p-5 shadow-card sm:p-6"
+            >
               <Input
                 label={t.identity.label}
-                placeholder={t.identity.placeholder}
+                placeholder={tpl(t.identity.placeholder, { digits: STUDENT_ID_LENGTH })}
                 value={digitsOnly}
                 onChange={(next) => {
                   const clean = sanitize(next);
@@ -94,9 +100,9 @@ export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => vo
                 hint={
                   remaining > 0
                     ? isBangla
-                      ? `${remaining} সংখ্যা বাকি`
+                      ? tpl(t.identity.remaining, { n: remaining })
                       : `${remaining} digit${remaining === 1 ? "" : "s"} to go`
-                    : t.identity.hint
+                    : tpl(t.identity.hint, { digits: STUDENT_ID_LENGTH })
                 }
                 // A registration number is a code: monospaced, tabular, always
                 // left-to-right even inside a Bangla interface.
@@ -111,19 +117,19 @@ export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => vo
               <Button
                 type="submit"
                 size="medium"
-                className="mt-6 h-11 w-full text-body-medium"
+                className="mt-5 h-11 w-full text-body-medium"
                 trailingIcon={RiArrowRightLine}
               >
                 {t.identity.submit}
               </Button>
             </form>
 
-            <p className="mt-6 flex items-start gap-2 text-caption-1-medium text-text-tertiary">
+            <p className="mt-5 flex items-start gap-2 text-body-2-regular text-text-tertiary">
               <span
                 aria-hidden
-                className="mt-[3px] inline-block size-1 shrink-0 rounded-full bg-accent-500"
+                className="mt-[7px] inline-block size-1 shrink-0 rounded-full bg-accent-500"
               />
-              {t.identity.hint}
+              {tpl(t.identity.hint, { digits: STUDENT_ID_LENGTH })}
             </p>
           </div>
         </div>

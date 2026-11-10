@@ -61,6 +61,30 @@
 :root {
   --color-background-full: #fbfaf7;
   --color-seat-free: var(--color-neutral-200);
+
+  /* ---- Text roles ---------------------------------------------------------
+   * The kit's light ramp puts `tertiary` at neutral-400, which measures 2.35:1
+   * on this ground — below the 4.5:1 a 12px label needs, and it was what made
+   * every placeholder look washed out. The three roles are shifted one step
+   * darker so each one is legible while still reading as a hierarchy:
+   *
+   *   primary   neutral-950   19.7:1
+   *   secondary neutral-600    6.0:1
+   *   tertiary  neutral-500    4.6:1
+   *   placeholder  #6d6a62     5.2:1  (lighter than typed text, still readable)
+   *
+   * The placeholder sits a step darker than tertiary on purpose: it has to
+   * reach 4.5:1 against the field's own fill, not against the page.
+   */
+  --color-text-secondary: var(--color-neutral-600);
+  --color-text-tertiary: var(--color-neutral-500);
+  --color-text-placeholder: #6d6a62;
+
+  /* The field shell was neutral-200, a grey block that read as disabled. A
+   * step lighter than the card keeps it visibly a field without competing
+   * with the text inside it. */
+  --color-background-tertiary-default: var(--color-neutral-100);
+  --color-background-tertiary-hover: var(--color-neutral-200);
 }
 
 .dark {
@@ -68,6 +92,53 @@
   --color-seat-confirmed: var(--color-accent-400);
   --color-seat-held: var(--color-accent-700);
   --color-seat-free: var(--color-neutral-800);
+
+  /* Dark surfaces absorb the same ramp the other way round. */
+  --color-text-secondary: var(--color-neutral-300);
+  --color-text-tertiary: var(--color-neutral-400);
+  --color-text-placeholder: var(--color-neutral-400);
+
+  --color-background-tertiary-default: var(--color-neutral-800);
+  --color-background-tertiary-hover: var(--color-neutral-700);
+}
+
+/* ---------------------------------------------------------------------------
+ * Field shells
+ *
+ * A fill alone is not enough to say "this is editable" once the fill sits
+ * close to the card behind it, so every field carries a hairline too.
+ * Keyed on the shell's role, because the number field does not carry the
+ * `data-input-size` attribute its siblings do.
+ * ------------------------------------------------------------------------- */
+
+[role="presentation"],
+[role="group"] {
+  box-shadow: inset 0 0 0 1px var(--color-border-button-default);
+}
+
+/* The kit paints placeholders with the tertiary text token, which is sized for
+ * a label on the page rather than for text sitting on a field's own fill. On
+ * the fill it measured 4.12:1 — under the 4.5:1 minimum, and the reason every
+ * empty field looked washed out. Placeholders get their own token instead. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-placeholder);
+  opacity: 1;
+}
+
+/* Bengali needs more size than Latin at the same optical weight: conjuncts
+ * close up below about 13px. The kit sets hints at 12px, which is fine for
+ * English and cramped for Bangla, so captions step up one notch for both
+ * languages rather than only one of them.
+ *
+ * Written outside any @layer on purpose. The kit's `.text-caption-1-medium`
+ * lives in Tailwind's utilities layer, and a later layer always beats an
+ * earlier one regardless of specificity — a rule in `components` would lose
+ * no matter how specific it was. */
+[slot="description"],
+[slot="errorMessage"] {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -124,16 +195,16 @@
 
 @utility text-display-1 {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 1.35rem + 2.4vw, 3rem);
-  line-height: 1.06;
+  font-size: clamp(1.875rem, 1.4rem + 1.7vw, 2.5rem);
+  line-height: 1.08;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.028em;
 }
 
 @utility text-display-2 {
   font-family: var(--font-display);
-  font-size: clamp(1.375rem, 1.15rem + 0.85vw, 1.75rem);
-  line-height: 1.16;
+  font-size: clamp(1.375rem, 1.2rem + 0.6vw, 1.625rem);
+  line-height: 1.18;
   font-weight: 600;
   letter-spacing: -0.02em;
 }

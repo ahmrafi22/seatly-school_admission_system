@@ -23,6 +23,16 @@ type Tab = "classes" | "mine" | "manage";
 
 const HOLD_POLL_MS = 5_000;
 
+/**
+ * The hold window, in minutes.
+ *
+ * The server owns the real duration (`HOLD_DURATION_SECONDS`, 600 by default).
+ * This constant exists only so the toast can say "10 minutes" without
+ * hardcoding the numeral into copy; the countdown itself is always driven by
+ * the `expiresAt` the server returns.
+ */
+const HOLD_MINUTES = 10;
+
 function App() {
   return (
     <LanguageProvider>
@@ -33,7 +43,7 @@ function App() {
 }
 
 function Shell() {
-  const { t } = useI18n();
+  const { t, tpl } = useI18n();
   const { studentId, hasStudentId, setStudentId, clearStudentId } = useStudentId();
   const [tab, setTab] = useState<Tab>("classes");
 
@@ -65,10 +75,12 @@ function Shell() {
   const myHolds = holds.data ?? [];
 
   const onApplied = useCallback(() => {
-    toast.success(t.toast.holdCreated, { description: t.toast.holdCreatedBody });
+    toast.success(tpl(t.toast.holdCreated, { minutes: HOLD_MINUTES }), {
+      description: t.toast.holdCreatedBody,
+    });
     holds.refresh();
     setTab("mine");
-  }, [holds, t]);
+  }, [holds, t, tpl]);
 
   if (!hasStudentId) {
     return <IdentityGate onSubmit={setStudentId} />;
