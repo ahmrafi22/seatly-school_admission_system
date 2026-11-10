@@ -46,7 +46,7 @@ export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassC
       className="group relative flex flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-5 shadow-card transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-0.5 hover:border-border-button-hover hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h3 className="font-display text-title-3-semibold text-text-primary">
             <span className="line-clamp-2">{cls.name}</span>
           </h3>
@@ -58,12 +58,12 @@ export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassC
         {hasConfirmed ? (
           <Chip color="lime" variant="bold" className="shrink-0 gap-1">
             <RiCheckLine className="size-3" aria-hidden />
-            {t.classes.yourConfirmed}
+            {t.mine.statusConfirmed}
           </Chip>
         ) : hasActiveHold ? (
           <Chip color="cyan" variant="bold" className="shrink-0 gap-1">
             <RiTimeLine className="size-3" aria-hidden />
-            {t.classes.yourHold}
+            {t.mine.statusHeld}
           </Chip>
         ) : full ? (
           <Chip color="neutral" variant="bold" className="shrink-0">
