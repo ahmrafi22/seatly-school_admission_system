@@ -13,7 +13,7 @@
 export type Lang = "en" | "bn";
 
 const en = {
-  brand: "Only Seatly.",
+  brand: "Seatly.",
   brandTagline: "School admission, without the queue",
 
   common: {
@@ -41,18 +41,24 @@ const en = {
   },
 
   identity: {
-    title: "Your birth registration number",
+    title: "Start your admission",
     description:
-      "This {digits}-digit number is your identity here. It is stored on this device only, so you can close the browser and come back to your applications.",
+      "Enter the {digits}-digit birth registration number from your certificate. There is no account and no password — the number is your identity on this device, so you can close the browser and come back to your applications.",
+    formTitle: "Enter your number",
     label: "Birth registration number",
-    remaining: "{n} digit to go",
+    remaining: "{n} digits to go",
+    remainingOne: "1 digit to go",
+    complete: "Complete",
     placeholder: "{digits} digits",
-    hint: "Exactly {digits} digits, as printed on the certificate.",
+    privacy: "Stored on this device only.",
     errorEmpty: "Enter your {digits}-digit birth registration number.",
     errorShort: "That number is too short — it needs all {digits} digits.",
     errorLong: "That number is too long — it needs to be exactly {digits} digits.",
     errorFormat: "Use digits only, with no spaces or letters.",
     submit: "Continue",
+    previewSecure: "Secure & simple",
+    previewPrivate: "Private on this device",
+    previewTrack: "Track applications",
     change: "Use a different number",
     switching: "Switching student",
     switchWarning:
@@ -60,15 +66,30 @@ const en = {
   },
 
   nav: {
+    search: "Search",
+    searchPlaceholder: "Search navigation…",
+    noResults: "No results",
+    support: "Support",
+    settings: "Settings",
+    closeSidebar: "Close sidebar",
+    clearSearch: "Clear search",
+    account: "Account",
+    accountTitle: "Your registration number",
+    viewProfile: "View profile",
+    logOut: "Log out",
+    signOut: "Use a different number",
+    switchStudent: "Switch student",
+    openMenu: "Open menu",
     classes: "Classes",
     applications: "My applications",
     manage: "Manage classes",
+    adminBadge: "Admin",
     skipToContent: "Skip to content",
   },
 
   classes: {
     heading: "Open classes",
-    subheading: "Seats are held for a limited time once you apply.",
+    subheading: "Select a class to enroll in.",
     availableLabel: "available",
     full: "Full",
     almostFull: "Almost full",
@@ -96,14 +117,17 @@ const en = {
     confirmedTitle: "Admission confirmed",
     confirmedBody: "Your seat is secured. Nothing else is needed.",
     cancelledTitle: "Application cancelled",
-    payFee: "Pay admission fee",
+    payFee: "Pay the admission fee",
     paying: "Confirming…",
+    holdToConfirm: "Hold to confirm admission",
+    holdingToConfirm: "Keep holding…",
+    holdHint: "Press and hold until the bar is full.",
+    classLabel: "Class",
+    expiresLabel: "Seat expires",
     cancelApplication: "Cancel application",
     cancelling: "Cancelling…",
-    confirmingTitle: "Confirm this admission?",
     confirmingBody:
       "This reserves the seat permanently. In a real school this is where the admission fee is paid.",
-    confirmYes: "Confirm admission",
     cancellingTitle: "Cancel this application?",
     cancellingBody:
       "The seat returns to the pool immediately and someone else can take it.",
@@ -113,7 +137,7 @@ const en = {
 
   mine: {
     heading: "My applications",
-    subheading: "Everything this number has applied for, newest first.",
+    subheading: "Everything you have applied for with this number, newest first.",
     emptyTitle: "No applications yet",
     emptyBody:
       "Apply for a seat in any open class and it will appear here — even after you close the browser.",
@@ -131,6 +155,7 @@ const en = {
     heading: "Manage classes",
     subheading:
       "Create a class with a fixed number of seats. Seats are never oversold, even under load.",
+    add: "Add class",
     formTitle: "New class",
     nameLabel: "Class name",
     namePlaceholder: "Class 6 — Morning shift",
@@ -141,15 +166,14 @@ const en = {
     creating: "Creating…",
     created: "Class created",
     existing: "Existing classes",
+    emptyBody: "Use “Add class” above to publish the first one.",
     errorName: "Give the class a name.",
     errorSeats: "Seats must be a whole number between {min} and {max}.",
   },
 
   freshness: {
     updated: "Updated",
-    updatedNow: "just now",
-    secondsAgo: "{n}s ago",
-    minutesAgo: "{n}m ago",
+    updatedAt: "Updated {time}",
     updating: "Updating…",
     offline: "Can't reach the server",
     offlineBody: "Retrying automatically. Counts below may be out of date.",
@@ -183,8 +207,7 @@ const en = {
   },
 
   footer: {
-    note: "Seat holds expire automatically. No login, no queue.",
-    builtWith: "Seat accounting enforced in PostgreSQL",
+    note: "Seats are held for a limited time, then released automatically.",
   },
 } as const;
 
@@ -196,7 +219,7 @@ type DeepWiden<T> = T extends string
   : { [K in keyof T]: DeepWiden<T[K]> };
 
 const bn: Copy = {
-  brand: "Only Seatly.",
+  brand: "Seatly.",
   brandTagline: "লাইনে দাঁড়ানো ছাড়াই স্কুলে ভর্তি",
 
   common: {
@@ -224,18 +247,24 @@ const bn: Copy = {
   },
 
   identity: {
-    title: "আপনার জন্ম নিবন্ধন নম্বর",
+    title: "ভর্তি শুরু করুন",
     description:
-      "এই {digits} সংখ্যার নম্বরটিই এখানে আপনার পরিচয়। এটি শুধু এই ডিভাইসে সংরক্ষিত থাকে, তাই ব্রাউজার বন্ধ করেও ফিরে এসে নিজের আবেদন দেখতে পারবেন।",
+      "সনদে লেখা {digits} সংখ্যার জন্ম নিবন্ধন নম্বরটি লিখুন। কোনো অ্যাকাউন্ট বা পাসওয়ার্ড লাগবে না — এই নম্বরই এই ডিভাইসে আপনার পরিচয়, তাই ব্রাউজার বন্ধ করেও ফিরে এসে নিজের আবেদন দেখতে পারবেন।",
+    formTitle: "নম্বরটি লিখুন",
     label: "জন্ম নিবন্ধন নম্বর",
     remaining: "{n} সংখ্যা বাকি",
+    remainingOne: "আর ১ সংখ্যা বাকি",
+    complete: "সম্পূর্ণ",
     placeholder: "{digits} সংখ্যা",
-    hint: "সনদে লেখা ঠিক {digits} সংখ্যার নম্বরটি দিন।",
+    privacy: "শুধু এই ডিভাইসে সংরক্ষিত।",
     errorEmpty: "আপনার {digits} সংখ্যার জন্ম নিবন্ধন নম্বরটি লিখুন।",
     errorShort: "নম্বরটি ছোট — পুরো {digits} সংখ্যা দরকার।",
     errorLong: "নম্বরটি বড় — ঠিক {digits} সংখ্যা হতে হবে।",
     errorFormat: "শুধু সংখ্যা লিখুন, ফাঁকা জায়গা বা অক্ষর নয়।",
     submit: "এগিয়ে যান",
+    previewSecure: "নিরাপদ ও সহজ",
+    previewPrivate: "এই ডিভাইসে গোপন",
+    previewTrack: "আবেদন দেখুন",
     change: "অন্য নম্বর ব্যবহার করুন",
     switching: "শিক্ষার্থী বদলানো হচ্ছে",
     switchWarning:
@@ -243,15 +272,30 @@ const bn: Copy = {
   },
 
   nav: {
+    search: "খুঁজুন",
+    searchPlaceholder: "মেনুতে খুঁজুন…",
+    noResults: "কিছু পাওয়া যায়নি",
+    support: "সহায়তা",
+    settings: "সেটিংস",
+    closeSidebar: "সাইডবার বন্ধ করুন",
+    clearSearch: "খোঁজা মুছুন",
+    account: "অ্যাকাউন্ট",
+    accountTitle: "আপনার নিবন্ধন নম্বর",
+    viewProfile: "প্রোফাইল দেখুন",
+    logOut: "বেরিয়ে যান",
+    signOut: "অন্য নম্বর ব্যবহার করুন",
+    switchStudent: "শিক্ষার্থী বদলান",
+    openMenu: "মেনু খুলুন",
     classes: "ক্লাস",
     applications: "আমার আবেদন",
     manage: "ক্লাস ব্যবস্থাপনা",
+    adminBadge: "অ্যাডমিন",
     skipToContent: "মূল অংশে যান",
   },
 
   classes: {
     heading: "খোলা ক্লাস",
-    subheading: "আবেদন করার পর আসনটি নির্দিষ্ট সময়ের জন্য সংরক্ষিত থাকে।",
+    subheading: "ভর্তির জন্য একটি ক্লাস বেছে নিন।",
     availableLabel: "খালি",
     full: "পূর্ণ",
     almostFull: "প্রায় পূর্ণ",
@@ -281,12 +325,15 @@ const bn: Copy = {
     cancelledTitle: "আবেদন বাতিল হয়েছে",
     payFee: "ভর্তি ফি দিন",
     paying: "নিশ্চিত করা হচ্ছে…",
+    holdToConfirm: "ভর্তি নিশ্চিত করতে ধরে রাখুন",
+    holdingToConfirm: "ধরে রাখুন…",
+    holdHint: "বারটি পূর্ণ না হওয়া পর্যন্ত চেপে ধরে রাখুন।",
+    classLabel: "ক্লাস",
+    expiresLabel: "আসনের মেয়াদ",
     cancelApplication: "আবেদন বাতিল",
     cancelling: "বাতিল হচ্ছে…",
-    confirmingTitle: "এই ভর্তিটি নিশ্চিত করবেন?",
     confirmingBody:
       "এতে আসনটি স্থায়ীভাবে আপনার হবে। বাস্তব স্কুলে এখানেই ভর্তি ফি দেওয়া হয়।",
-    confirmYes: "ভর্তি নিশ্চিত করুন",
     cancellingTitle: "এই আবেদনটি বাতিল করবেন?",
     cancellingBody:
       "আসনটি সঙ্গে সঙ্গে খালি হয়ে যাবে এবং অন্য কেউ নিতে পারবে।",
@@ -314,6 +361,7 @@ const bn: Copy = {
     heading: "ক্লাস ব্যবস্থাপনা",
     subheading:
       "নির্দিষ্ট সংখ্যক আসন দিয়ে ক্লাস তৈরি করুন। চাপ থাকলেও আসন কখনো বেশি বিক্রি হয় না।",
+    add: "ক্লাস যোগ করুন",
     formTitle: "নতুন ক্লাস",
     nameLabel: "ক্লাসের নাম",
     namePlaceholder: "ষষ্ঠ শ্রেণি — সকাল শিফট",
@@ -324,15 +372,14 @@ const bn: Copy = {
     creating: "তৈরি হচ্ছে…",
     created: "ক্লাস তৈরি হয়েছে",
     existing: "বর্তমান ক্লাস",
+    emptyBody: "উপরের “ক্লাস যোগ করুন” বোতাম থেকে প্রথমটি যোগ করুন।",
     errorName: "ক্লাসের একটি নাম দিন।",
     errorSeats: "আসন {min} থেকে {max} এর মধ্যে পূর্ণসংখ্যা হতে হবে।",
   },
 
   freshness: {
     updated: "হালনাগাদ",
-    updatedNow: "এইমাত্র",
-    secondsAgo: "{n} সেকেন্ড আগে",
-    minutesAgo: "{n} মিনিট আগে",
+    updatedAt: "হালনাগাদ {time}",
     updating: "হালনাগাদ হচ্ছে…",
     offline: "সার্ভারে পৌঁছানো যাচ্ছে না",
     offlineBody: "স্বয়ংক্রিয়ভাবে আবার চেষ্টা হচ্ছে। নিচের সংখ্যা পুরোনো হতে পারে।",
@@ -366,8 +413,7 @@ const bn: Copy = {
   },
 
   footer: {
-    note: "সংরক্ষিত আসনের মেয়াদ স্বয়ংক্রিয়ভাবে শেষ হয়। লগইন নেই, লাইন নেই।",
-    builtWith: "আসনের হিসাব PostgreSQL-এ নিশ্চিত করা",
+    note: "আসন নির্দিষ্ট সময়ের জন্য সংরক্ষিত থাকে, পরে স্বয়ংক্রিয়ভাবে ছেড়ে দেওয়া হয়।",
   },
 };
 

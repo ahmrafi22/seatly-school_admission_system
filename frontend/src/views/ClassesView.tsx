@@ -11,7 +11,7 @@ import { api, ApiError, type ClassSummary, type MyHold } from "@/src/lib/api";
 import { usePolling } from "@/src/lib/usePolling";
 import { ClassCard, ClassCardSkeleton } from "@/src/components/ClassCard";
 import { Freshness, OfflineBanner } from "@/src/components/Freshness";
-import { readableError } from "@/src/components/ApplicationCard";
+import { readableError } from "@/src/lib/errors";
 
 const POLL_MS = 4_000;
 
@@ -85,14 +85,6 @@ export function ClassesView({
             lastCheckedAt={classes.lastCheckedAt}
             isFetching={classes.isFetching}
             failures={classes.failures}
-          />
-          <Button
-            variant="secondary"
-            size="small"
-            iconOnly
-            aria-label={t.common.retry}
-            onClick={classes.refresh}
-            leadingIcon={RiRefreshLine}
           />
         </div>
       </div>
