@@ -10,8 +10,9 @@ namespace SchoolAdmission.Api.Controllers;
 public class MeController(SeatAllocationService seats) : ControllerBase
 {
     /// <summary>
-    /// Lists the caller's applications, including lapsed ones. Expired holds are
-    /// reported as EXPIRED even if the background sweeper has not run yet.
+    /// Lists the caller's applications, including lapsed ones. A lapsed hold is
+    /// reported as EXPIRED here even though the row is only rewritten to EXPIRED
+    /// the next time a write path reclaims it.
     /// </summary>
     [HttpGet("holds")]
     [ProducesResponseType(typeof(IEnumerable<MyHoldResponse>), StatusCodes.Status200OK)]

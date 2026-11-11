@@ -20,12 +20,5 @@ public class AppOptions
     /// </summary>
     public string[] CorsOrigins { get; set; } = ["http://localhost:5173", "http://localhost:3000"];
 
-    /// <summary>
-    /// How often expired holds are swept to EXPIRED, in seconds.
-    /// Env: EXPIRY_SWEEP_SECONDS (default 15).
-    /// </summary>
-    public int ExpirySweepSeconds { get; set; } = 15;
-
     public TimeSpan HoldDuration => TimeSpan.FromSeconds(HoldDurationSeconds);
-    public TimeSpan ExpirySweepInterval => TimeSpan.FromSeconds(Math.Max(1, ExpirySweepSeconds));
 }

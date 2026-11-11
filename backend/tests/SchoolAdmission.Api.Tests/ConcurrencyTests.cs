@@ -7,14 +7,11 @@ using SchoolAdmission.Api.Services;
 namespace SchoolAdmission.Api.Tests;
 
 /// <summary>
-/// Concurrency tests. These require a real PostgreSQL instance because the
-/// guarantee under test is a database row lock, not an in-process lock.
+/// Concurrency tests. These need a real PostgreSQL instance because the guarantee
+/// under test is a database row lock, not an in-process lock.
 ///
-/// Point them at a database with:
-///   TEST_DATABASE_CONNECTION=Host=localhost;Port=5432;Database=school_admission_test;Username=postgres;Password=postgres
-///
-/// When that variable is absent the tests are skipped rather than failing, so a
-/// plain `dotnet test` on a machine without Postgres still succeeds.
+/// Point them at a database with TEST_DATABASE_CONNECTION. When that variable is
+/// absent the tests return early, so a plain `dotnet test` still passes.
 /// </summary>
 public class ConcurrencyTests : IAsyncLifetime
 {
@@ -56,8 +53,8 @@ public class ConcurrencyTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// The headline requirement: N students race for M seats, and exactly M
-    /// succeed. No overselling, no negative availability.
+    /// The headline requirement: N students race for M seats and exactly M
+    /// succeed.
     /// </summary>
     [Fact]
     public async Task ParallelHolds_NeverExceedTotalSeats()
@@ -100,8 +97,8 @@ public class ConcurrencyTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Same guarantee but expressed against two independent service instances
-    /// sharing one database, which is the "two backend processes" scenario.
+    /// The same guarantee with two independent service instances sharing one
+    /// database, which is the "two backend processes" scenario.
     /// </summary>
     [Fact]
     public async Task TwoProcessesSharingOneDatabase_StillNeverOversell()
@@ -115,7 +112,7 @@ public class ConcurrencyTests : IAsyncLifetime
 
         async Task<int> RunProcessAsync(int processIndex)
         {
-            // Separate DbContext per call: no shared state between the two "processes".
+            // Separate DbContext per call: no shared state between the two.
             var tasks = Enumerable.Range(0, applicantsPerProcess).Select(async i =>
             {
                 await using var db = NewContext();
@@ -209,8 +206,8 @@ public class ConcurrencyTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Lapsed holds must free their seats even with no API call and no sweeper:
-    /// the next applicant reclaims them inside the write transaction.
+    /// Lapsed holds must free their seats with no API call and no sweeper: the
+    /// next applicant reclaims them inside the write transaction.
     /// </summary>
     [Fact]
     public async Task ExpiredHolds_ReleaseSeatsWithoutSweeper()

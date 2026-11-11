@@ -6,7 +6,7 @@ using SchoolAdmission.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------------------------------------------------------------------------
-// Configuration — everything environment-driven, nothing baked into the image.
+// Configuration: environment-driven, nothing baked into the image.
 // ---------------------------------------------------------------------------
 builder.Configuration.AddEnvironmentVariables();
 
@@ -18,12 +18,6 @@ var holdSecondsFromEnv = builder.Configuration["HOLD_DURATION_SECONDS"];
 if (int.TryParse(holdSecondsFromEnv, out var parsedHoldSeconds) && parsedHoldSeconds > 0)
 {
     appOptions.HoldDurationSeconds = parsedHoldSeconds;
-}
-
-var sweepSecondsFromEnv = builder.Configuration["EXPIRY_SWEEP_SECONDS"];
-if (int.TryParse(sweepSecondsFromEnv, out var parsedSweepSeconds) && parsedSweepSeconds > 0)
-{
-    appOptions.ExpirySweepSeconds = parsedSweepSeconds;
 }
 
 var corsFromEnv = builder.Configuration["CORS_ORIGINS"];
@@ -61,7 +55,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ---------------------------------------------------------------------------
-// Schema — apply pending migrations on boot so `docker compose up` needs no
+// Schema: apply pending migrations on boot so `docker compose up` needs no
 // manual step. Retries because Postgres may still be starting.
 // ---------------------------------------------------------------------------
 await ApplyMigrationsAsync(app);
@@ -91,8 +85,8 @@ app.MapGet("/health", () => Results.Ok(new
 app.Run();
 
 /// <summary>
-/// Applies pending migrations, retrying while the database comes up.
-/// Concurrent instances are safe: EF Core takes an advisory lock.
+/// Applies pending migrations, retrying while the database comes up. Concurrent
+/// instances are safe: EF Core takes an advisory lock.
 /// </summary>
 static async Task ApplyMigrationsAsync(WebApplication app)
 {

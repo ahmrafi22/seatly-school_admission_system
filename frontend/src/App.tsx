@@ -6,7 +6,7 @@ import { MyApplicationsView } from "@/src/views/MyApplicationsView";
 import { ManageView } from "@/src/views/ManageView";
 import { useI18n } from "@/src/i18n/LanguageProvider";
 import { useStudentId } from "@/src/lib/useStudentId";
-import { api, type MyHold } from "@/src/lib/api";
+import { api, type HoldCreated, type MyHold } from "@/src/lib/api";
 import { usePolling } from "@/src/lib/usePolling";
 import { AppShell, type Tab } from "@/src/shell/AppShell";
 
@@ -18,7 +18,6 @@ import { AppShell, type Tab } from "@/src/shell/AppShell";
  * navigation decision, not a rewrite.
  */
 const HOLD_POLL_MS = 5_000;
-const HOLD_MINUTES = 10;
 
 export default function App() {
   const { t, tpl } = useI18n();
@@ -48,13 +47,18 @@ export default function App() {
 
   const myHolds = holds.data ?? [];
 
-  const onApplied = useCallback(() => {
-    toast.success(tpl(t.toast.holdCreated, { minutes: HOLD_MINUTES }), {
-      description: t.toast.holdCreatedBody,
-    });
-    holds.refresh();
-    setTab("mine");
-  }, [holds, t, tpl]);
+  const onApplied = useCallback(
+    (created: HoldCreated) => {
+      const msLeft = Date.parse(created.expiresAt) - Date.now();
+      const minutes = Math.max(1, Math.round(msLeft / 60_000));
+      toast.success(tpl(t.toast.holdCreated, { minutes }), {
+        description: t.toast.holdCreatedBody,
+      });
+      holds.refresh();
+      setTab("mine");
+    },
+    [holds, t, tpl],
+  );
 
   if (!hasStudentId) {
     return <IdentityGate onSubmit={setStudentId} />;

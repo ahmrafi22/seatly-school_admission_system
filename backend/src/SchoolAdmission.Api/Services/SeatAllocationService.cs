@@ -11,15 +11,13 @@ namespace SchoolAdmission.Api.Services;
 /// <summary>
 /// All seat accounting lives here.
 ///
-/// Concurrency strategy: every mutation takes a row lock on the owning
-/// <c>classes</c> row (<c>SELECT ... FOR UPDATE</c>) before reading or writing
-/// counters. Postgres serialises those transactions, so the invariant
-/// <c>held + confirmed &lt;= totalSeats</c> holds even when several API
-/// processes share one database — unlike an in-process lock.
+/// Every mutation takes a row lock on the owning <c>classes</c> row
+/// (<c>SELECT ... FOR UPDATE</c>) before reading or writing counters. Postgres
+/// serialises those transactions, so <c>held + confirmed &lt;= totalSeats</c>
+/// holds even when several API processes share one database.
 ///
-/// Expiry is reclaimed lazily inside the same transaction: lapsed holds are
-/// flipped to EXPIRED and their seats returned before capacity is evaluated.
-/// That keeps counters honest without depending on the background sweeper.
+/// Lapsed holds are reclaimed lazily inside the same transaction, before
+/// capacity is evaluated.
 /// </summary>
 public class SeatAllocationService(
     AppDbContext db,
@@ -49,7 +47,7 @@ public class SeatAllocationService(
 
     public async Task<List<Class>> ListClassesAsync(CancellationToken ct)
     {
-        // Reclaim first so reported counts are not stale between sweeps.
+        // Reclaim first so the counts returned are not stale.
         var ids = await db.Classes.AsNoTracking().Select(c => c.Id).ToListAsync(ct);
         foreach (var id in ids)
         {
@@ -128,7 +126,7 @@ public class SeatAllocationService(
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             // The partial unique index caught a duplicate that slipped past the
-            // check (e.g. a concurrent insert in another process).
+            // check, e.g. a concurrent insert in another process.
             return SeatResult<Hold>.Fail(
                 SeatOutcome.DuplicateActiveApplication,
                 "You already have an active application in this class.");
@@ -315,12 +313,9 @@ public class SeatAllocationService(
     // --------------------------------------------------------------- internals
 
     /// <summary>
-    /// Takes a row lock on the class and returns a tracked copy of the row.
-    /// Must be called inside a transaction.
-    ///
-    /// The lock is taken with raw SQL because LINQ cannot express FOR UPDATE.
-    /// The entity is then loaded with AsNoTracking and attached, so we always
-    /// read the freshly locked values instead of a stale tracked instance.
+    /// Takes a row lock on the class and returns a tracked copy. Must be called
+    /// inside a transaction. Raw SQL because LINQ cannot express FOR UPDATE; the
+    /// row is then read with AsNoTracking so it is never a stale instance.
     /// </summary>
     private async Task<Class?> LockClassAsync(Guid classId, CancellationToken ct)
     {

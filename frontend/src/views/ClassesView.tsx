@@ -7,7 +7,7 @@ import {
 } from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
 import { useI18n } from "@/src/i18n/LanguageProvider";
-import { api, ApiError, type ClassSummary, type MyHold } from "@/src/lib/api";
+import { api, ApiError, type ClassSummary, type HoldCreated, type MyHold } from "@/src/lib/api";
 import { usePolling } from "@/src/lib/usePolling";
 import { ClassCard, ClassCardSkeleton } from "@/src/components/ClassCard";
 import { Freshness, OfflineBanner } from "@/src/components/Freshness";
@@ -16,11 +16,8 @@ import { readableError } from "@/src/lib/errors";
 const POLL_MS = 4_000;
 
 /**
- * The list of open classes.
- *
- * Polls every four seconds so seat counts move without a reload, and surfaces
- * the last successful read in the header. A failed poll does not blank the
- * list: the last known counts stay on screen, dimmed under an honest banner,
+ * The list of open classes. Polls every four seconds so seat counts move without
+ * a reload. A failed poll keeps the last known counts under an honest banner,
  * because "the server is down" is more useful than "no classes".
  */
 export function ClassesView({
@@ -31,7 +28,7 @@ export function ClassesView({
 }: {
   studentId: string;
   myHolds: MyHold[];
-  onApplied: () => void;
+  onApplied: (created: HoldCreated) => void;
   onOpenMine: () => void;
 }) {
   const { t, isBangla } = useI18n();
@@ -55,13 +52,13 @@ export function ClassesView({
     setApplyingId(cls.id);
     setActionError(null);
     try {
-      await api.createHold(cls.id, studentId);
-      onApplied();
+      const created = await api.createHold(cls.id, studentId);
+      onApplied(created);
       classes.refresh();
     } catch (caught) {
       setActionError(readableError(caught, t));
       // A 409 means someone took the last seat: read again so the card tells
-      // the truth rather than leaving a stale number next to an error.
+      // the truth instead of showing a stale number beside an error.
       if (caught instanceof ApiError && caught.status === 409) classes.refresh();
     } finally {
       setApplyingId(null);
