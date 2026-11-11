@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { RiCheckLine, RiTimeLine } from "@remixicon/react";
+import { RiTimeLine } from "@remixicon/react";
+import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
 import { Button } from "@/components/base/buttons/button";
 import { Chip } from "@/components/base/badges/chip";
 import { AlertDialog } from "@/components/base/modal/modal";
+import { AdmissionFeeDialog } from "@/src/components/AdmissionFeeDialog";
 import { useI18n } from "@/src/i18n/LanguageProvider";
-import { api, ApiError, type MyHold } from "@/src/lib/api";
-import { effectiveStatus, formatTime, localizeDigits } from "@/src/lib/format";
+import { api, type MyHold } from "@/src/lib/api";
+import { readableError } from "@/src/lib/errors";
+import { effectiveStatus, formatCountdown, formatTime } from "@/src/lib/format";
 
 /**
  * One application, with its own live countdown.
@@ -27,9 +30,9 @@ export function ApplicationCard({
   now: number;
   onChanged: () => void;
 }) {
-  const { t, isBangla, locale } = useI18n();
-  const [busy, setBusy] = useState<"confirm" | "cancel" | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { t, locale } = useI18n();
+  const [busy, setBusy] = useState<"cancel" | null>(null);
+  const [feeOpen, setFeeOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,17 +40,11 @@ export function ApplicationCard({
   const msLeft = Math.max(0, Date.parse(hold.expiresAt) - now);
   const urgent = status === "HELD" && msLeft > 0 && msLeft < 120_000;
 
-  const n = (value: number) => localizeDigits(value, isBangla ? "bn" : "en");
-
-  const run = async (action: "confirm" | "cancel") => {
-    setBusy(action);
+  const cancel = async () => {
+    setBusy("cancel");
     setError(null);
     try {
-      if (action === "confirm") {
-        await api.confirmHold(hold.holdId, studentId);
-      } else {
-        await api.cancelHold(hold.holdId, studentId);
-      }
+      await api.cancelHold(hold.holdId, studentId);
       onChanged();
     } catch (caught) {
       setError(readableError(caught, t));
@@ -86,7 +83,14 @@ export function ApplicationCard({
             <RiTimeLine className="size-3.5" aria-hidden />
             <span>
               {t.hold.expiresIn}{" "}
-              <span className="tabular">{formatClock(msLeft, n)}</span>
+              {/* The digits roll, so they are hidden from the accessibility
+                  tree and replaced with one stable reading. A screen reader
+                  would otherwise hear a stream of changing digit nodes every
+                  second. */}
+              <span aria-hidden>
+                <Countdown msLeft={msLeft} />
+              </span>
+              <span className="sr-only">{formatCountdown(msLeft)}</span>
             </span>
           </div>
         )}
@@ -116,11 +120,10 @@ export function ApplicationCard({
               variant="primary"
               size="medium"
               className="h-10 w-full"
-              onClick={() => setConfirmOpen(true)}
-              aria-busy={busy === "confirm" || undefined}
+              onClick={() => setFeeOpen(true)}
               disabled={busy !== null}
             >
-              {busy === "confirm" ? t.hold.paying : t.hold.payFee}
+              {t.hold.payFee}
             </Button>
             <Button
               variant="secondary"
@@ -135,17 +138,14 @@ export function ApplicationCard({
         )}
       </div>
 
-      <AlertDialog
-        isOpen={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        variant="default"
-        icon={RiCheckLine}
-        title={t.hold.confirmingTitle}
-        description={t.hold.confirmingBody}
-        confirmLabel={t.hold.confirmYes}
-        cancelLabel={t.common.cancel}
-        pendingLabel={t.hold.paying}
-        onConfirm={() => run("confirm")}
+      {/* Paying the fee is a hold, not a click: the seat leaves the pool for
+          good and the payment stands, so the gesture has to be deliberate. */}
+      <AdmissionFeeDialog
+        isOpen={feeOpen}
+        onOpenChange={setFeeOpen}
+        hold={hold}
+        studentId={studentId}
+        onConfirmed={onChanged}
       />
 
       <AlertDialog
@@ -156,7 +156,7 @@ export function ApplicationCard({
         confirmLabel={t.hold.cancelYes}
         cancelLabel={t.common.cancel}
         pendingLabel={t.hold.cancelling}
-        onConfirm={() => run("cancel")}
+        onConfirm={cancel}
       />
     </article>
   );
@@ -178,23 +178,41 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
-function formatClock(ms: number, n: (v: number) => string) {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${n(m).padStart(2, "0")}:${n(s).padStart(2, "0")}`;
-}
+/**
+ * The hold countdown, as two rolling numbers.
+ *
+ * `NumberFlowGroup` is what makes this read as one clock rather than two
+ * independent counters: the group batches both flows into a single animation
+ * frame, so minutes and seconds always move together. Without it the seconds
+ * digit can visibly land a frame before the minutes digit on the tick where
+ * both change.
+ *
+ * Each half is padded to two digits by its `format` rather than by string
+ * padding, so `04` is two real digits that roll, and a value that crosses from
+ * `59` to `00` slides rather than jumping.
+ */
+function Countdown({ msLeft }: { msLeft: number }) {
+  const total = Math.max(0, Math.floor(msLeft / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
 
-/** Turn any thrown value into a sentence, preferring the server's own detail. */
-export function readableError(
-  caught: unknown,
-  t: ReturnType<typeof useI18n>["t"],
-): string {
-  if (caught instanceof ApiError) {
-    if (caught.isNetworkError) {
-      return `${t.errors.networkTitle}. ${t.errors.networkBody}`;
-    }
-    return caught.message;
-  }
-  return caught instanceof Error ? caught.message : t.errors.genericTitle;
+  return (
+    <NumberFlowGroup>
+      <span className="tabular">
+        <NumberFlow
+          value={minutes}
+          format={{ minimumIntegerDigits: 2 }}
+          trend={-1}
+          aria-hidden
+        />
+        {":"}
+        <NumberFlow
+          value={seconds}
+          format={{ minimumIntegerDigits: 2 }}
+          trend={-1}
+          aria-hidden
+        />
+      </span>
+    </NumberFlowGroup>
+  );
 }
