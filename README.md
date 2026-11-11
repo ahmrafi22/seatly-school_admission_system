@@ -14,7 +14,18 @@ pool on its own.
 Everything runs from one command. Nothing needs to be installed except Docker.
 
 ```bash
-docker compose up --build
+docker compose up
+```
+
+On a fresh clone this builds both images itself, starts PostgreSQL, the API
+and the frontend, waits for each to be healthy, and then prints where to go:
+
+```text
+  Ready. Open:
+
+    Frontend :  http://localhost:3000
+    Backend  :  http://localhost:8080
+    Health   :  http://localhost:8080/health
 ```
 
 | | |
@@ -22,6 +33,12 @@ docker compose up --build
 | **Frontend** | **http://localhost:3000** |
 | Backend API | http://localhost:8080 |
 | PostgreSQL | `localhost:5432` (`postgres` / `postgres`) |
+
+The terminal stays attached and shows the logs; **Ctrl+C stops the stack**
+(the data survives in its volume — only `docker compose down -v` discards it).
+Prefer the background? `docker compose up -d` starts the same stack silently —
+detached mode prints no container output, so the table above is the address
+book. Add `--build` to force a rebuild after pulling new code.
 
 Open the frontend, enter any 17-digit number as a registration number, and you
 are in. There is no login: the number is the identity, and it is remembered in
@@ -42,7 +59,7 @@ export TEST_DATABASE_CONNECTION="Host=localhost;Port=5432;Database=school_admiss
 dotnet test SchoolAdmission.sln
 ```
 
-Frontend — 38 tests:
+Frontend — 48 tests:
 
 ```bash
 cd frontend
@@ -50,25 +67,9 @@ npm test
 ```
 
 The concurrency suite needs the database above. It creates and drops its own
-rows and does not touch the application database.
-
-Browser checks that drive the real app (they need a running stack):
-
-```bash
-cd frontend
-npm run dev                       # or docker compose up
-node scripts/polling.mjs          # seat counts move without a reload
-node scripts/expiry.mjs           # a hold flips to EXPIRED on its own
-node scripts/behaviour.mjs        # server-down message, persistence, toggles
-node scripts/compose-journey.mjs  # create → apply → confirm against :3000
-```
-
-The literal two-process test — two OS processes sharing one database:
-
-```bash
-dotnet publish backend/src/SchoolAdmission.Api -c Release -o /tmp/api-publish
-node scripts/two-processes.mjs
-```
+rows and does not touch the application database. One of the five is the
+literal two-process test: two backend OS processes sharing one database, sixty
+concurrent applicants, exactly ten accepted and fifty rejected with 409.
 
 ## How the seat rules are enforced
 

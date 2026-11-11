@@ -35,7 +35,6 @@ src/
   components/     IdentityGate, ClassCard, ApplicationCard, SeatBar, Freshness, Toolbar
   lib/            api client, polling hook, formatting, student id storage
   i18n/           English and Bangla copy, language provider
-scripts/          browser checks that drive the real app
 ```
 
 ## Notes
