@@ -37,7 +37,25 @@ export function translateTemplateCopy<T>(value: T, translate: TemplateCopyTransl
   function visit(value: unknown, data = false): unknown {
     if (typeof value === "string") return data ? value : translate(value);
     if (Array.isArray(value)) {
-      const result = value.map(item => visit(item, data));
+      const result = value.map((item, index) => {
+        const visited = visit(item, data);
+        if (visited === item) return visited;
+        if (!isValidElement(visited)) return visited;
+
+        // A rebuilt array loses React's key tracking unless every entry
+        // carries one. Elements that already had a key keep it; the rest are
+        // *static* JSX children — `<aside>` with several direct children gives
+        // React an unkeyed array, which is legal only because the array is the
+        // same one every render. Replacing it with a new array makes React
+        // reconcile it as a dynamic list, so each entry needs a key now.
+        //
+        // Index keys are safe here precisely because these children are
+        // static: they cannot reorder.
+        const key = (item as { key?: string | null })?.key;
+        return cloneElement(visited, {
+          key: key === null || key === undefined ? `tc-${index}` : key,
+        } as never);
+      });
       return result.every((item, index) => item === value[index]) ? value : result;
     }
     if (isValidElement<Record<string, unknown>>(value)) {
@@ -49,7 +67,14 @@ export function translateTemplateCopy<T>(value: T, translate: TemplateCopyTransl
         else if (dataProps.has(key)) updates[key] = visit(original, true);
         else if (renderProps.has(key) && typeof original === "function") updates[key] = (...args: unknown[]) => visit(original(...args));
       }
-      return Object.entries(updates).some(([key, result]) => result !== value.props[key]) ? cloneElement(value, updates) : value;
+      const changed = Object.entries(updates).some(([key, result]) => result !== value.props[key]);
+      if (!changed) return value;
+      // Carry the element's own key onto the clone. Without it, a translated
+      // child of a mapped list loses the identity React reconciles on and the
+      // console fills with "unique key" warnings.
+      const cloned = cloneElement(value, updates);
+      const key = (value as { key?: string | null }).key;
+      return key === null || key === undefined ? cloned : cloneElement(value, { ...updates, key });
     }
     if (data && value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
       const result: Record<string, unknown> = { ...value };

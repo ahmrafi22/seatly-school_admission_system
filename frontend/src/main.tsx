@@ -14,9 +14,11 @@ import "@fontsource/poppins/600.css";
 import "@fontsource/hind-siliguri/400.css";
 import "@fontsource/hind-siliguri/500.css";
 import "@fontsource/hind-siliguri/600.css";
+import "@fontsource-variable/noto-sans-bengali";
 import "@fontsource-variable/jetbrains-mono";
 
 import App from "@/src/App";
+import { LanguageProvider } from "@/src/i18n/LanguageProvider";
 
 /**
  * Apply the stored theme before the first paint.
@@ -36,6 +38,8 @@ try {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <LanguageProvider>
+      <App />
+    </LanguageProvider>
   </StrictMode>,
 );
