@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 # GetSeatly — the whole stack, one command.
 #
-#   docker compose up --build
+#   docker compose up
 #
 # Frontend  http://localhost:3000
 # Backend   http://localhost:8080
@@ -9,6 +9,10 @@
 #
 # Nothing needs to be installed except Docker. The schema is created by the
 # API's migrations on first start.
+#
+# Run attached (`docker compose up`) and the URL list prints itself once the
+# stack is ready. `docker compose up -d` stays silent — detached mode shows no
+# container output — so the addresses above are the reference.
 # ------------------------------------------------------------------------------
 
 services:
@@ -84,6 +88,12 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+    post_start:
+      - command:
+          - sh
+          - -c
+          - |
+            printf '\n  Ready. Open:\n\n    Frontend :  http://localhost:3000\n    Backend  :  http://localhost:8080\n    Health   :  http://localhost:8080/health\n\n'
 
 volumes:
   db_data:
