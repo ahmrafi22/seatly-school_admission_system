@@ -11,13 +11,9 @@ import { readableError } from "@/src/lib/errors";
 import { effectiveStatus, formatCountdown, formatTime } from "@/src/lib/format";
 
 /**
- * One application, with its own live countdown.
- *
- * The status shown is `effectiveStatus`, not the stored one: a HELD row whose
- * `expiresAt` has passed reads EXPIRED here the instant the clock crosses,
- * without a reload and without waiting for the next poll. That is the
- * requirement stated most explicitly in the brief, and doing it on the client
- * means it is exact rather than "within a few seconds".
+ * One application with its own live countdown. The status shown is
+ * `effectiveStatus`, not the stored one: a HELD row past `expiresAt` reads
+ * EXPIRED the instant the clock crosses, with no reload and no wait for a poll.
  */
 export function ApplicationCard({
   hold,
@@ -83,10 +79,8 @@ export function ApplicationCard({
             <RiTimeLine className="size-3.5" aria-hidden />
             <span>
               {t.hold.expiresIn}{" "}
-              {/* The digits roll, so they are hidden from the accessibility
-                  tree and replaced with one stable reading. A screen reader
-                  would otherwise hear a stream of changing digit nodes every
-                  second. */}
+              {/* The digits roll, so they are hidden from the accessibility tree
+                  and replaced with one stable reading. */}
               <span aria-hidden>
                 <Countdown msLeft={msLeft} />
               </span>
@@ -138,8 +132,7 @@ export function ApplicationCard({
         )}
       </div>
 
-      {/* Paying the fee is a hold, not a click: the seat leaves the pool for
-          good and the payment stands, so the gesture has to be deliberate. */}
+      {/* Paying the fee is a hold, not a click, because the payment stands. */}
       <AdmissionFeeDialog
         isOpen={feeOpen}
         onOpenChange={setFeeOpen}
@@ -179,22 +172,24 @@ function StatusChip({ status }: { status: string }) {
 }
 
 /**
- * The hold countdown, as two rolling numbers.
+ * The hold countdown as two rolling numbers. `NumberFlowGroup` batches both
+ * flows into one frame, so minutes and seconds always move together.
  *
- * `NumberFlowGroup` is what makes this read as one clock rather than two
- * independent counters: the group batches both flows into a single animation
- * frame, so minutes and seconds always move together. Without it the seconds
- * digit can visibly land a frame before the minutes digit on the tick where
- * both change.
- *
- * Each half is padded to two digits by its `format` rather than by string
- * padding, so `04` is two real digits that roll, and a value that crosses from
- * `59` to `00` slides rather than jumping.
+ * Bangla renders as plain digits; see the note in Num.tsx.
  */
 function Countdown({ msLeft }: { msLeft: number }) {
+  const { isBangla } = useI18n();
   const total = Math.max(0, Math.floor(msLeft / 1000));
   const minutes = Math.floor(total / 60);
   const seconds = total % 60;
+
+  if (isBangla) {
+    return (
+      <span className="tabular" aria-hidden>
+        {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+      </span>
+    );
+  }
 
   return (
     <NumberFlowGroup>
