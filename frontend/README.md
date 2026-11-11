@@ -11,7 +11,7 @@ npm install
 npm run dev       # http://localhost:5173, proxies /api to :8080
 npm run build     # type-check, then build to dist/
 npm run preview   # serve the built output
-npm test          # 38 tests (vitest + jsdom)
+npm test          # 48 tests (vitest + jsdom)
 npm run lint      # oxlint
 ```
 
