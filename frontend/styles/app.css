@@ -41,12 +41,17 @@
   --color-neutral-950: #0c0b0a;
 
   /* ---- Type ---------------------------------------------------------------
-   * Poppins for display and figures, Inter for interface text. Both fall back
-   * to Hind Siliguri, which carries the Bengali glyphs neither of the Latin
-   * faces has — so a single stack handles both languages. */
-  --font-sans: "Inter", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Poppins", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
-  --font-bangla: "Hind Siliguri", "Inter", ui-sans-serif, system-ui, sans-serif;
+   * Poppins for display and figures, Inter for interface text.
+   *
+   * Bengali needs its own face. Inter and Poppins have no Bengali glyphs at all,
+   * and Hind Siliguri — the first fallback tried — draws the numerals so light
+   * that `১` reads as a comma at caption size. Noto Sans Bengali has the same
+   * coverage with more contrast in the digits, so it is what actually paints a
+   * Bengali interface. Latin never falls through to it: Inter covers every
+   * Latin glyph the UI uses, and the Bengali face is scoped by unicode-range. */
+  --font-sans: "Inter", "Noto Sans Bengali Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", "Noto Sans Bengali Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-bangla: "Noto Sans Bengali Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* ---- Seat inventory -----------------------------------------------------
@@ -71,20 +76,39 @@
    *   primary   neutral-950   19.7:1
    *   secondary neutral-600    6.0:1
    *   tertiary  neutral-500    4.6:1
-   *   placeholder  #6d6a62     5.2:1  (lighter than typed text, still readable)
+   *   placeholder  #67645c     5.3:1  (lighter than typed text, still readable)
    *
    * The placeholder sits a step darker than tertiary on purpose: it has to
    * reach 4.5:1 against the field's own fill, not against the page.
    */
   --color-text-secondary: var(--color-neutral-600);
   --color-text-tertiary: var(--color-neutral-500);
-  --color-text-placeholder: #6d6a62;
+  --color-text-placeholder: #67645c;
 
   /* The field shell was neutral-200, a grey block that read as disabled. A
    * step lighter than the card keeps it visibly a field without competing
    * with the text inside it. */
   --color-background-tertiary-default: var(--color-neutral-100);
   --color-background-tertiary-hover: var(--color-neutral-200);
+
+  /* The navbar's height, as a single source of truth.
+   *
+   * The bar spans the full window and its bottom rule is what separates chrome
+   * from page, so everything below it — the sidebar's sticky offset and its
+   * height, the content row's minimum — must start at exactly this line.
+   *
+   * A variable rather than a repeated value because the bar's padding changes
+   * at `lg` (10px → 12px), which makes it 57px on a phone and 61px on a
+   * desktop — 1px taller than the padding maths suggests, because the bottom
+   * rule is a border and `border-box` includes it. Hard-coding the padded
+   * height put the sidebar's first row 1px above the rule. */
+  --navbar-height: 3.5625rem;
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --navbar-height: 3.8125rem;
+  }
 }
 
 .dark {
@@ -116,6 +140,27 @@
   box-shadow: inset 0 0 0 1px var(--color-border-button-default);
 }
 
+/* An invalid field is a state, not an alarm.
+ *
+ * The kit paints the whole shell with `background-tertiary-error`, which is a
+ * solid block of red — on a form this size it shouts far louder than the one
+ * sentence explaining what is wrong, and it makes a half-typed number look
+ * catastrophic. Keeping a tint of the error ramp and a red hairline says the
+ * same thing at a volume that matches the message.
+ *
+ * Keyed on the shell's own role and `data-invalid`, which React Aria sets on
+ * the group; the fill it replaces is applied by the same element's utility
+ * class, so this has to sit outside a layer to win. */
+[data-invalid="true"][role="presentation"],
+[data-invalid="true"][role="group"] {
+  background-color: color-mix(
+    in oklab,
+    var(--color-background-tertiary-error) 55%,
+    var(--color-background-tertiary-default)
+  );
+  box-shadow: inset 0 0 0 1px var(--color-border-error-default);
+}
+
 /* The kit paints placeholders with the tertiary text token, which is sized for
  * a label on the page rather than for text sitting on a field's own fill. On
  * the fill it measured 4.12:1 — under the 4.5:1 minimum, and the reason every
@@ -127,9 +172,10 @@ textarea::placeholder {
 }
 
 /* Bengali needs more size than Latin at the same optical weight: conjuncts
- * close up below about 13px. The kit sets hints at 12px, which is fine for
- * English and cramped for Bangla, so captions step up one notch for both
- * languages rather than only one of them.
+ * close up below about 13px, and the numerals are drawn noticeably lighter than
+ * Inter's. The kit sets hints at 12px, which is fine for English and cramped for
+ * Bangla, so captions step up one notch for both languages rather than only one
+ * of them.
  *
  * Written outside any @layer on purpose. The kit's `.text-caption-1-medium`
  * lives in Tailwind's utilities layer, and a later layer always beats an
@@ -139,6 +185,73 @@ textarea::placeholder {
 [slot="errorMessage"] {
   font-size: 0.8125rem;
   line-height: 1.25rem;
+}
+
+/* A Bengali digit at caption size is a single small stroke, and the caption
+ * token's 16px line box leaves it looking like punctuation beside a word.
+ *
+ * Neither Hind Siliguri nor Noto Sans Bengali draws its numerals at the cap
+ * height Latin digits occupy, so matching the Latin size is not the same as
+ * matching the Latin weight on the page. Any count that has to be read —
+ * confirmed, held, free, a total, a countdown — is set a step larger and a step
+ * heavier in Bangla, with the line box to match, so the two languages produce
+ * cards of the same shape. */
+[lang="bn"] .tabular {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 700;
+}
+
+/* …except inside a field.
+ *
+ * The rule above is written for counts on cards, where a numeral is a statistic
+ * and can carry the extra weight. In the trailing slot of the number field the
+ * same rule makes "১২ সংখ্যা বাকি" heavier and taller than the number the
+ * student is typing, which inverts the hierarchy at exactly the wrong moment.
+ * A hint inside a field stays a hint. */
+[lang="bn"] .tabular.field-note {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------------------
+ * The login ground
+ *
+ * Two soft stops of the accent ramp, painted as a radial gradient on the page
+ * itself. An earlier version used absolutely positioned `blur-3xl` circles,
+ * which is the usual recipe — but a circle larger than the viewport is clipped
+ * by the container, and the clip reads as a hard diagonal seam across the top
+ * right corner. A gradient has no edge to clip.
+ * ------------------------------------------------------------------------- */
+
+.gate-ground {
+  background-color: var(--color-background-full);
+  background-image:
+    radial-gradient(
+      42rem 32rem at 88% -6%,
+      color-mix(in oklab, var(--color-accent-100) 70%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      36rem 30rem at 4% 104%,
+      color-mix(in oklab, var(--color-accent-50) 85%, transparent),
+      transparent 68%
+    );
+}
+
+.dark .gate-ground {
+  background-image:
+    radial-gradient(
+      42rem 32rem at 88% -6%,
+      color-mix(in oklab, var(--color-accent-900) 45%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      36rem 30rem at 4% 104%,
+      color-mix(in oklab, var(--color-accent-950) 70%, transparent),
+      transparent 68%
+    );
 }
 
 /* ---------------------------------------------------------------------------
@@ -275,6 +388,52 @@ textarea::placeholder {
   animation: pulse-ring 2.4s ease-out infinite;
 }
 
+/* ---------------------------------------------------------------------------
+ * The confirmation mark
+ *
+ * The tick is *drawn*, not shown: the path's dash offset runs from its full
+ * length down to zero, so the stroke appears to be written rather than
+ * revealed. `pathLength="1"` on the path normalises the maths, which is why
+ * the dash numbers below are small and do not depend on the path's geometry.
+ *
+ * The disc arrives first and slightly overshoots, so the mark lands with a
+ * small push instead of simply appearing.
+ * ------------------------------------------------------------------------- */
+
+@keyframes confirm-tick-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes confirm-disc-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirm-tick {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: confirm-tick-draw 420ms cubic-bezier(0.32, 0.72, 0, 1) 180ms both;
+}
+
+.confirm-disc {
+  animation: confirm-disc-in 480ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-rise {
     animation: none;
@@ -285,5 +444,14 @@ textarea::placeholder {
   .live-dot::after {
     animation: none;
     opacity: 0;
+  }
+  /* The tick still has to be *there* — it is the answer, not decoration —
+     so it is drawn instantly rather than animated. */
+  .confirm-tick {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .confirm-disc {
+    animation: none;
   }
 }
