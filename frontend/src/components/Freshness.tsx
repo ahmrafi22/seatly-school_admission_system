@@ -1,17 +1,27 @@
+import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
 import { cx } from "@/utils/cx";
 import { useI18n } from "@/src/i18n/LanguageProvider";
-import { useNow } from "@/src/lib/usePolling";
 
 /**
  * How current the numbers on screen are.
  *
  * Three states, and each one answers a question the student actually has:
  *
- *   live    — "these counts were read 3 seconds ago"  (the polling is working)
+ *   live    — "these counts were read at 14:32:07"
  *   updating— "a read is in flight right now"
  *   offline — "the server is not answering, so what you see may be stale"
  *
- * The last state is a stated requirement: a stopped backend has to produce
+ * The time is an absolute clock reading rather than "3s ago". A relative label
+ * has to be recomputed every second to stay true, which makes it flicker and
+ * tells the reader nothing they can act on; a timestamp is stable, readable at
+ * a glance, and unambiguous across a tab switch.
+ *
+ * The clock digits roll on each successful poll, so a refresh that changes
+ * nothing still shows that it happened — the seconds move. That is the whole
+ * reason the reload button could be removed: the page already proves it is
+ * live, every four seconds, without being asked.
+ *
+ * The offline state is a stated requirement: a stopped backend has to produce
  * readable text in the page, not a frozen screen and a console error. It lives
  * here rather than in a toast because a toast disappears — the page must keep
  * saying it for as long as it is true.
@@ -27,37 +37,31 @@ export function Freshness({
   failures: number;
   className?: string;
 }) {
-  const { t, isBangla } = useI18n();
-  // A clock, so "updated 3s ago" actually counts up between polls. Reading
-  // Date.now() during render would freeze the label until the next fetch.
-  const now = useNow(1000);
+  const { t, tpl, locale } = useI18n();
 
   const offline = failures >= 2;
-  const age = lastCheckedAt === null ? null : now - lastCheckedAt;
+  const hasRead = lastCheckedAt !== null;
 
-  let text: string;
+  // The clock stays mounted while a refresh is in flight.
+  //
+  // The first version switched the label to "Updating…" whenever `isFetching`
+  // was true, which meant the timestamp unmounted and remounted on every poll —
+  // so the rolling digits never had a previous value to roll *from*, and the
+  // animation silently did nothing. It also made the label flicker once every
+  // four seconds. A background refresh is not a state the reader needs to see
+  // named; the seconds moving is the evidence.
   let tone: "live" | "working" | "offline";
+  let plain: string;
 
   if (offline) {
     tone = "offline";
-    text = t.freshness.offline;
-  } else if (isFetching) {
+    plain = t.freshness.offline;
+  } else if (!hasRead) {
     tone = "working";
-    text = t.freshness.updating;
-  } else if (age === null) {
-    tone = "working";
-    text = t.freshness.updating;
-  } else if (age < 5_000) {
-    tone = "live";
-    text = `${t.freshness.updated} ${t.freshness.updatedNow}`;
-  } else if (age < 60_000) {
-    tone = "live";
-    const seconds = Math.floor(age / 1000);
-    text = t.freshness.secondsAgo.replace("{n}", isBangla ? toBn(seconds) : String(seconds));
+    plain = t.freshness.updating;
   } else {
     tone = "live";
-    const minutes = Math.floor(age / 60_000);
-    text = t.freshness.minutesAgo.replace("{n}", isBangla ? toBn(minutes) : String(minutes));
+    plain = tpl(t.freshness.updatedAt, { time: formatClockTime(lastCheckedAt, locale) });
   }
 
   return (
@@ -78,19 +82,84 @@ export function Freshness({
           "relative inline-block size-1.5 shrink-0 rounded-full",
           tone === "offline"
             ? "bg-text-error-primary"
-            : tone === "working"
-              ? "bg-accent-400"
-              : "live-dot bg-accent-500",
+            : isFetching
+              ? // A read is in flight: the dot changes tone, but the clock text
+                // stays put. This is the only thing `isFetching` is allowed to
+                // touch — see the note above about unmounting the digits.
+                "bg-accent-400"
+              : tone === "working"
+                ? "bg-accent-400"
+                : "live-dot bg-accent-500",
         )}
       />
-      {text}
+
+      {/* One plain sentence for the accessibility tree. The visible clock
+          below is a stack of rolling digits, which would be read as a stream
+          of changing nodes; this is what `role="status"` actually announces,
+          and it is also the element's accessible name. */}
+      <span className="sr-only">{plain}</span>
+
+      <span aria-hidden>
+        {tone === "live" && lastCheckedAt !== null ? (
+          <>
+            {t.freshness.updated}{" "}
+            <ClockTime epochMs={lastCheckedAt} locale={locale} />
+          </>
+        ) : (
+          plain
+        )}
+      </span>
     </span>
   );
 }
 
-function toBn(n: number): string {
-  const map = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-  return String(n).replace(/\d/g, (d) => map[Number(d)]);
+/**
+ * "8:09:15 PM", with each field as a rolling number.
+ *
+ * The separators and the day period stay as plain text; only the hour, minute
+ * and second roll. They are wrapped in a `NumberFlowGroup` so all three fields
+ * advance in one animation frame — three independent counters drift apart by a
+ * frame on the tick where the second carries into the minute, and that reads
+ * as a stutter rather than as a clock.
+ */
+function ClockTime({ epochMs, locale }: { epochMs: number; locale: string }) {
+  const date = new Date(epochMs);
+
+  const hour = date.getHours() % 12 || 12;
+  const minute = date.getMinutes();
+  const second = date.getSeconds();
+
+  // `locale` is a BCP 47 tag, so it is "bn-BD" rather than "bn". Comparing
+  // against "bn" would never match, and the Bangla clock would quietly render
+  // Latin digits.
+  const bcp47 = locale.startsWith("bn") ? "bn-BD" : "en-US";
+
+  const period =
+    new Intl.DateTimeFormat(bcp47, { hour: "numeric", hour12: true })
+      .formatToParts(date)
+      .find((part) => part.type === "dayPeriod")?.value ?? "";
+
+  return (
+    <NumberFlowGroup>
+      <span className="tabular">
+        <NumberFlow value={hour} locales={bcp47} aria-hidden />
+        {":"}
+        <NumberFlow value={minute} locales={bcp47} format={{ minimumIntegerDigits: 2 }} aria-hidden />
+        {":"}
+        <NumberFlow value={second} locales={bcp47} format={{ minimumIntegerDigits: 2 }} aria-hidden />
+        {period ? ` ${period}` : null}
+      </span>
+    </NumberFlowGroup>
+  );
+}
+
+function formatClockTime(epochMs: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale.startsWith("bn") ? "bn-BD" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(new Date(epochMs));
 }
 
 /**

@@ -34,7 +34,10 @@ export function effectiveStatus(
 export function formatTime(iso: string, locale: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale === "bn" ? "bn-BD" : "en-GB", {
+  // The locale arrives as a full BCP 47 tag — "bn-BD", not "bn" — so the
+  // match has to be on the language subtag. Comparing the whole tag silently
+  // sent every Bangla timestamp through the English formatter.
+  return new Intl.DateTimeFormat(locale.startsWith("bn") ? "bn-BD" : "en-GB", {
     day: "numeric",
     month: "short",
     hour: "2-digit",

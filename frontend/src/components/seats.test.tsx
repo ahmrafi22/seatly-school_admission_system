@@ -41,24 +41,33 @@ describe("SeatBar", () => {
 });
 
 describe("Freshness", () => {
-  it("reports a recent successful read as live", () => {
-    render(
+  it("stamps the last successful read with a clock time", () => {
+    const { container } = render(
       <LanguageProvider>
         <Freshness lastCheckedAt={Date.now()} isFetching={false} failures={0} />
       </LanguageProvider>,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(/just now/i);
+    // A stable timestamp, not a relative label: "Updated 7:22:27 PM". This is
+    // the sentence the status announces. The visible clock beside it is a
+    // stack of rolling digits and is `aria-hidden`, so the screen-reader text
+    // is asserted directly rather than the element's whole text content — which
+    // in jsdom also picks up NumberFlow's inlined fallback styles.
+    expect(container.querySelector(".sr-only")).toHaveTextContent(
+      /^Updated \d{1,2}:\d{2}:\d{2}\s?(AM|PM)$/,
+    );
   });
 
   it("says the server cannot be reached after repeated failures", () => {
-    render(
+    const { container } = render(
       <LanguageProvider>
         <Freshness lastCheckedAt={Date.now() - 60_000} isFetching={false} failures={3} />
       </LanguageProvider>,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(/can't reach the server/i);
+    expect(container.querySelector(".sr-only")).toHaveTextContent(
+      /can't reach the server/i,
+    );
   });
 
   it("treats a single dropped request as noise, not an outage", () => {

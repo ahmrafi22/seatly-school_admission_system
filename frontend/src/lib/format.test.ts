@@ -97,4 +97,16 @@ describe("formatTime", () => {
   it("returns a dash for an invalid date", () => {
     expect(formatTime("nonsense", "en")).toBe("—");
   });
+
+  it("formats in English for an English locale", () => {
+    expect(formatTime("2026-11-10T14:32:00Z", "en-GB")).toMatch(/10/);
+  });
+
+  it("formats in Bangla for a Bangla locale", () => {
+    // The locale arrives as the full tag "bn-BD", not "bn" — matching the
+    // whole string sent every Bangla timestamp through the English formatter.
+    const bangla = formatTime("2026-11-10T14:32:00Z", "bn-BD");
+    expect(bangla).not.toMatch(/Nov/);
+    expect(bangla).toMatch(/[ঀ-৿]/);
+  });
 });

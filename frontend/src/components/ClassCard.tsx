@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/base/skeleton/skeleton";
 import { useI18n } from "@/src/i18n/LanguageProvider";
 import type { ClassSummary, HoldStatus } from "@/src/lib/api";
 import { localizeDigits } from "@/src/lib/format";
+import { Num } from "@/src/components/Num";
 import { SeatBar } from "@/src/components/SeatBar";
 
 export interface ClassCardProps {
@@ -50,8 +51,9 @@ export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassC
           <h3 className="font-display text-title-3-semibold text-text-primary">
             <span className="line-clamp-2">{cls.name}</span>
           </h3>
-          <p className="mt-1 text-caption-1-medium text-text-tertiary">
-            {n(cls.totalSeats)} {t.common.seats}
+          <p className="mt-1 flex items-baseline gap-1 text-caption-1-medium text-text-tertiary">
+            <span className="tabular">{n(cls.totalSeats)}</span>
+            {t.common.seats}
           </p>
         </div>
 
@@ -78,9 +80,13 @@ export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassC
       </div>
 
       {/* The figure is the reason the card exists, so it is the largest thing
-          on it after the name. */}
-      <div className="mt-5 flex items-end justify-between gap-4">
-        <div>
+          on it after the name. The two supporting counts are labelled rather
+          than left as bare numbers beside coloured dots: at caption size a
+          Bengali numeral is small enough that an unlabelled one is unreadable,
+          and `leading-5` gives the glyphs the full line box instead of the
+          clipped 16px the caption token allows. */}
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <span
             className={
               full
@@ -88,26 +94,34 @@ export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassC
                 : "text-figure text-[2rem] text-text-primary"
             }
           >
-            {n(Math.max(0, cls.availableSeats))}
+            <Num
+              value={Math.max(0, cls.availableSeats)}
+              label={n(Math.max(0, cls.availableSeats))}
+            />
           </span>
           <span className="ms-1.5 text-body-regular text-text-secondary">
             {t.classes.availableLabel}
           </span>
         </div>
 
-        <dl className="flex items-center gap-3 text-caption-1-medium">
+        <dl className="flex shrink-0 items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span
-              aria-hidden
-              className="size-2 rounded-[3px] bg-seat-confirmed"
-            />
-            <dt className="sr-only">{t.classes.confirmed}</dt>
-            <dd className="tabular text-text-secondary">{n(cls.confirmedSeats)}</dd>
+            <span aria-hidden className="size-2 shrink-0 rounded-[3px] bg-seat-confirmed" />
+            <dt className="text-caption-1-medium leading-5 text-text-tertiary">
+              {t.classes.confirmed}
+            </dt>
+            <dd className="tabular text-body-2-medium leading-5 text-text-primary">
+              <Num value={cls.confirmedSeats} label={n(cls.confirmedSeats)} />
+            </dd>
           </div>
           <div className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2 rounded-[3px] bg-seat-held" />
-            <dt className="sr-only">{t.classes.held}</dt>
-            <dd className="tabular text-text-secondary">{n(cls.heldSeats)}</dd>
+            <span aria-hidden className="size-2 shrink-0 rounded-[3px] bg-seat-held" />
+            <dt className="text-caption-1-medium leading-5 text-text-tertiary">
+              {t.classes.held}
+            </dt>
+            <dd className="tabular text-body-2-medium leading-5 text-text-primary">
+              <Num value={cls.heldSeats} label={n(cls.heldSeats)} />
+            </dd>
           </div>
         </dl>
       </div>
