@@ -1,13 +1,27 @@
 import { useState, type FormEvent } from "react";
-import { RiAddLine, RiErrorWarningLine, RiInformationLine } from "@remixicon/react";
+import {
+  RiAddLine,
+  RiErrorWarningLine,
+  RiRefreshLine,
+} from "@remixicon/react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { NumberField } from "@/components/base/number-field/number-field";
+import {
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  useModalClose,
+} from "@/components/base/modal/modal";
+import { toast } from "@/components/base/toast/toast";
 import { useI18n } from "@/src/i18n/LanguageProvider";
-import { api, ApiError, type ClassSummary } from "@/src/lib/api";
+import { api, type ClassSummary } from "@/src/lib/api";
 import { usePolling } from "@/src/lib/usePolling";
 import { SeatBar } from "@/src/components/SeatBar";
-import { Freshness } from "@/src/components/Freshness";
+import { Freshness, OfflineBanner } from "@/src/components/Freshness";
+import { readableError } from "@/src/lib/errors";
+import { occupancyPercent } from "@/src/lib/format";
 
 // Mirrors the server's own limits, so the common mistakes are caught before a
 // round trip and the copy can name the exact bounds.
@@ -18,22 +32,219 @@ const MAX_SEATS = 10_000;
 /**
  * Class administration.
  *
- * The brief asks for the whole system to be operable from the UI, which
- * includes creating a class — so this is a real form, not a note pointing at
- * curl. Validation mirrors the server's own rules (name required, 1–10,000
- * seats) so the common mistakes are caught before a round trip, and the
- * server's message still wins if it disagrees.
+ * The page's own subject is the seat data: every class with its full inventory
+ * — confirmed, on hold, free, and how full it has run — laid out as one card
+ * each. Creating is a deliberate act rather than a standing invitation, so the
+ * form lives behind the "Add class" button and opens as a dialog; the default
+ * view is the numbers, not a blank form waiting to be filled.
+ *
+ * Validation inside the dialog mirrors the server's own rules (name required,
+ * 1–10,000 seats) so the common mistakes are caught before a round trip, and
+ * the server's message still wins if it disagrees.
  */
 export function ManageView({ onCreated }: { onCreated: () => void }) {
-  const { t, tpl, n } = useI18n();
+  const { t } = useI18n();
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const classes = usePolling<ClassSummary[]>(() => api.listClasses(), 8_000);
+  const list = classes.data ?? [];
+
+  const isLoading = classes.isLoading;
+  const firstLoadFailed = isLoading === false && classes.data === null;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-display-2 text-text-primary">{t.manage.heading}</h2>
+          <p className="mt-1 max-w-[42rem] text-body-medium text-text-secondary">
+            {t.manage.subheading}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <Button
+            variant="primary"
+            size="medium"
+            leadingIcon={RiAddLine}
+            onClick={() => setDialogOpen(true)}
+          >
+            {t.manage.add}
+          </Button>
+        </div>
+      </div>
+
+      <OfflineBanner
+        failures={classes.failures}
+        onRetry={classes.refresh}
+        isRetrying={classes.isFetching}
+      />
+
+      {isLoading && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {[0, 1].map((key) => (
+            <StatCardSkeleton key={key} />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && firstLoadFailed && (
+        <div className="flex flex-col items-center rounded-3xl border border-dashed border-border-button-default bg-background-primary-default px-6 py-14 text-center">
+          <span className="grid size-12 place-items-center rounded-2xl bg-background-tertiary-error text-text-error-primary">
+            <RiErrorWarningLine className="size-5" aria-hidden />
+          </span>
+          <h3 className="mt-4 font-display text-title-3-semibold text-text-primary">
+            {t.errors.networkTitle}
+          </h3>
+          <p className="mt-1.5 max-w-[26rem] text-body-regular text-text-secondary">
+            {t.errors.networkBody}
+          </p>
+          <Button
+            variant="secondary"
+            size="medium"
+            className="mt-5"
+            leadingIcon={RiRefreshLine}
+            onClick={classes.refresh}
+          >
+            {t.common.retry}
+          </Button>
+        </div>
+      )}
+
+      {!isLoading && !firstLoadFailed && list.length === 0 && (
+        <div className="flex flex-col items-center rounded-3xl border border-dashed border-border-button-default bg-background-primary-default px-6 py-14 text-center">
+          <h3 className="font-display text-title-3-semibold text-text-primary">
+            {t.classes.emptyTitle}
+          </h3>
+          <p className="mt-1.5 max-w-[28rem] text-body-regular text-text-secondary">
+            {t.manage.emptyBody}
+          </p>
+        </div>
+      )}
+
+      {list.length > 0 && (
+        <>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-headline-medium text-text-primary">
+              {t.manage.existing}
+            </h3>
+            <Freshness
+              lastCheckedAt={classes.lastCheckedAt}
+              isFetching={classes.isFetching}
+              failures={classes.failures}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {list.map((cls) => (
+              <ClassStatCard key={cls.id} cls={cls} />
+            ))}
+          </div>
+        </>
+      )}
+
+      <CreateClassDialog
+        isOpen={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onCreated={() => {
+          classes.refresh();
+          onCreated();
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * One class's seat inventory, stated in full: the name and how full it has
+ * run, the same three-part bar the students see, and beneath it the counts
+ * that bar is drawn from. Held is shown separately from confirmed on purpose —
+ * both are "taken right now", but only one is permanent, and an administrator
+ * needs to see how much of the fullness is still refundable.
+ */
+function ClassStatCard({ cls }: { cls: ClassSummary }) {
+  const { t, n } = useI18n();
+  const fill = Math.round(occupancyPercent(cls));
+
+  return (
+    <article className="flex flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-5 shadow-card">
+      <div className="flex items-baseline justify-between gap-3">
+        <h4 className="min-w-0 truncate text-title-3-semibold text-text-primary">
+          {cls.name}
+        </h4>
+        <span className="shrink-0 text-figure text-text-primary">
+          {n(fill)}
+          <span className="text-caption-1-medium font-normal text-text-tertiary">%</span>
+        </span>
+      </div>
+
+      <SeatBar cls={cls} className="mt-3" />
+
+      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-separator-border pt-4 sm:grid-cols-4">
+        <Stat label={t.classes.totalSeats} value={cls.totalSeats} />
+        <Stat label={t.classes.confirmed} value={cls.confirmedSeats} />
+        <Stat label={t.classes.held} value={cls.heldSeats} />
+        <Stat label={t.classes.free} value={cls.availableSeats} />
+      </dl>
+    </article>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  const { n } = useI18n();
+  return (
+    <div className="min-w-0">
+      <dt className="truncate text-caption-1-medium text-text-tertiary">{label}</dt>
+      <dd className="mt-0.5 text-figure text-text-primary">{n(value)}</dd>
+    </div>
+  );
+}
+
+function StatCardSkeleton() {
+  return (
+    <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-5 shadow-card">
+      <div className="h-5 w-2/5 animate-pulse rounded-md bg-background-tertiary-default" />
+      <div className="mt-4 h-2.5 w-full animate-pulse rounded-full bg-background-tertiary-default" />
+      <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[0, 1, 2, 3].map((key) => (
+          <div
+            key={key}
+            className="h-8 animate-pulse rounded-md bg-background-tertiary-default"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The create-class dialog. The form lives here, not on the page, and its
+ * state lives inside the panel — React Aria unmounts a closed modal's
+ * contents, so every visit starts blank and a failed attempt never leaks
+ * into the next one.
+ */
+function CreateClassDialog({
+  isOpen,
+  onOpenChange,
+  onCreated,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+}) {
+  return (
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md" role="dialog">
+      <CreateClassPanel onCreated={onCreated} />
+    </Modal>
+  );
+}
+
+function CreateClassPanel({ onCreated }: { onCreated: () => void }) {
+  const { t, tpl } = useI18n();
+  const close = useModalClose();
   const [name, setName] = useState("");
   const [seats, setSeats] = useState<number>(40);
   const [errors, setErrors] = useState<{ name?: string; seats?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [justCreated, setJustCreated] = useState<ClassSummary | null>(null);
-
-  const classes = usePolling<ClassSummary[]>(() => api.listClasses(), 8_000);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -56,163 +267,92 @@ export function ManageView({ onCreated }: { onCreated: () => void }) {
     setFormError(null);
     try {
       const created = await api.createClass(trimmed, seats);
-      setJustCreated(created);
-      setName("");
-      setSeats(40);
-      classes.refresh();
+      toast.success(t.toast.classCreated, { description: created.name });
       onCreated();
+      close();
     } catch (caught) {
-      setFormError(
-        caught instanceof ApiError
-          ? caught.message
-          : caught instanceof Error
-            ? caught.message
-            : t.errors.genericTitle,
-      );
+      setFormError(readableError(caught, t));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h2 className="text-display-2 text-text-primary">{t.manage.heading}</h2>
-        <p className="mt-1 max-w-[42rem] text-body-medium text-text-secondary">
-          {t.manage.subheading}
-        </p>
-      </div>
+    <>
+      <ModalHeader
+        title={t.manage.formTitle}
+        closeLabel={t.common.close}
+      />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start">
+      <ModalBody>
         <form
+          id="create-class"
           onSubmit={submit}
           noValidate
-          className="rounded-3xl border border-border-button-default bg-background-primary-default p-5 shadow-card sm:p-6"
+          className="flex flex-col gap-4 pb-2"
         >
-          <h3 className="font-display text-title-3-semibold text-text-primary">
-            {t.manage.formTitle}
-          </h3>
+          <Input
+            label={t.manage.nameLabel}
+            placeholder={t.manage.namePlaceholder}
+            hint={tpl(t.manage.nameHint, { max: MAX_NAME })}
+            value={name}
+            onChange={(next) => {
+              setName(next);
+              if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+            }}
+            isInvalid={Boolean(errors.name)}
+            errorMessage={errors.name}
+            maxLength={200}
+            autoComplete="off"
+          />
 
-          <div className="mt-5 flex flex-col gap-4">
-            <Input
-              label={t.manage.nameLabel}
-              placeholder={t.manage.namePlaceholder}
-              hint={tpl(t.manage.nameHint, { max: MAX_NAME })}
-              value={name}
-              onChange={(next) => {
-                setName(next);
-                if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
-              }}
-              isInvalid={Boolean(errors.name)}
-              errorMessage={errors.name}
-              maxLength={200}
-              autoComplete="off"
-            />
+          <NumberField
+            label={t.manage.seatsLabel}
+            hint={tpl(t.manage.seatsHint, { min: MIN_SEATS, max: MAX_SEATS })}
+            value={seats}
+            onChange={setSeats}
+            minValue={MIN_SEATS}
+            maxValue={MAX_SEATS}
+            step={1}
+            isInvalid={Boolean(errors.seats)}
+          />
+          {errors.seats && (
+            <p className="-mt-2 text-caption-1-medium text-text-error-primary">
+              {errors.seats}
+            </p>
+          )}
 
-            <NumberField
-              label={t.manage.seatsLabel}
-              hint={tpl(t.manage.seatsHint, { min: MIN_SEATS, max: MAX_SEATS })}
-              value={seats}
-              onChange={setSeats}
-              minValue={MIN_SEATS}
-              maxValue={MAX_SEATS}
-              step={1}
-              isInvalid={Boolean(errors.seats)}
-            />
-            {errors.seats && (
-              <p className="-mt-2 text-caption-1-medium text-text-error-primary">
-                {errors.seats}
-              </p>
-            )}
-
-            {formError && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-xl bg-background-tertiary-error px-3 py-2.5"
-              >
-                <RiErrorWarningLine
-                  className="mt-0.5 size-4 shrink-0 text-text-error-primary"
-                  aria-hidden
-                />
-                <p className="text-body-regular text-text-primary">{formError}</p>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="medium"
-              className="h-10 w-full"
-              disabled={saving}
-              aria-busy={saving || undefined}
-              leadingIcon={RiAddLine}
+          {formError && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-xl bg-background-tertiary-error px-3 py-2.5"
             >
-              {saving ? t.manage.creating : t.manage.create}
-            </Button>
-          </div>
-
-          {justCreated && (
-            <div className="mt-5 flex items-start gap-2 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2.5 dark:border-accent-800 dark:bg-accent-950/40">
-              <RiInformationLine
-                className="mt-0.5 size-4 shrink-0 text-accent-700 dark:text-accent-300"
+              <RiErrorWarningLine
+                className="mt-0.5 size-4 shrink-0 text-text-error-primary"
                 aria-hidden
               />
-              <p className="text-body-regular text-accent-900 dark:text-accent-100">
-                {t.manage.created}: <strong className="font-medium">{justCreated.name}</strong> —{" "}
-                {n(justCreated.totalSeats)} {t.common.seats}
-              </p>
+              <p className="text-body-regular text-text-primary">{formError}</p>
             </div>
           )}
         </form>
+      </ModalBody>
 
-        <section className="min-w-0">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="text-headline-medium text-text-primary">{t.manage.existing}</h3>
-            <Freshness
-              lastCheckedAt={classes.lastCheckedAt}
-              isFetching={classes.isFetching}
-              failures={classes.failures}
-            />
-          </div>
-
-          <div className="overflow-hidden rounded-3xl border border-border-button-default bg-background-primary-default shadow-card">
-            {classes.data && classes.data.length === 0 && (
-              <p className="px-5 py-10 text-center text-body-regular text-text-secondary">
-                {t.classes.emptyBody}
-              </p>
-            )}
-
-            {classes.data?.map((cls, index) => (
-              <div
-                key={cls.id}
-                className={
-                  index === 0
-                    ? "px-5 py-4"
-                    : "border-t border-separator-border px-5 py-4"
-                }
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-body-medium text-text-primary">{cls.name}</p>
-                    <p className="mt-0.5 text-caption-1-medium text-text-tertiary">
-                      {n(cls.confirmedSeats)} {t.classes.confirmed.toLowerCase()} ·{" "}
-                      {n(cls.heldSeats)} {t.classes.held.toLowerCase()} ·{" "}
-                      {n(cls.availableSeats)} {t.classes.free.toLowerCase()}
-                    </p>
-                  </div>
-                  <span className="text-figure shrink-0 text-[1.125rem] text-text-primary">
-                    {n(cls.availableSeats)}
-                    <span className="ms-1 text-caption-1-medium font-normal text-text-tertiary">
-                      / {n(cls.totalSeats)}
-                    </span>
-                  </span>
-                </div>
-                <SeatBar cls={cls} size="sm" className="mt-2.5" />
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </div>
+      <ModalFooter>
+        <Button variant="secondary" size="medium" onClick={close}>
+          {t.common.cancel}
+        </Button>
+        <Button
+          type="submit"
+          form="create-class"
+          variant="primary"
+          size="medium"
+          disabled={saving}
+          aria-busy={saving || undefined}
+          leadingIcon={RiAddLine}
+        >
+          {saving ? t.manage.creating : t.manage.create}
+        </Button>
+      </ModalFooter>
+    </>
   );
 }
