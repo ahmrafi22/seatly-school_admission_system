@@ -1,5 +1,5 @@
 /**
- * Small formatting helpers. Kept separate from the components so the countdown
+ * Small formatting helpers, kept separate from the components so the countdown
  * and the seat arithmetic are testable in isolation.
  */
 
@@ -14,10 +14,9 @@ export function formatCountdown(msRemaining: number): string {
 }
 
 /**
- * A hold is live only while the server says HELD *and* the clock agrees. The
+ * A hold is live only while the server says HELD and the clock agrees. The
  * server reclaims lapsed holds lazily, so between polls the client has to make
- * the same judgement itself — otherwise the countdown would sit at 00:00 while
- * the row still read HELD.
+ * the same judgement itself.
  */
 export function effectiveStatus(
   status: HoldStatus,
@@ -34,9 +33,7 @@ export function effectiveStatus(
 export function formatTime(iso: string, locale: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";
-  // The locale arrives as a full BCP 47 tag — "bn-BD", not "bn" — so the
-  // match has to be on the language subtag. Comparing the whole tag silently
-  // sent every Bangla timestamp through the English formatter.
+  // locale arrives as a full BCP 47 tag ("bn-BD"), so match the language subtag.
   return new Intl.DateTimeFormat(locale.startsWith("bn") ? "bn-BD" : "en-GB", {
     day: "numeric",
     month: "short",
@@ -56,8 +53,8 @@ export function seatsFilled(c: {
 }
 
 /**
- * Percentage of a class's seats that are taken, clamped to 0–100 so a
- * temporarily inconsistent read can never render a bar wider than its track.
+ * Percentage of a class's seats that are taken, clamped to 0-100 so an
+ * inconsistent read cannot render a bar wider than its track.
  */
 export function occupancyPercent(c: {
   totalSeats: number;

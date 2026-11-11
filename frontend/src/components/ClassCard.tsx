@@ -24,6 +24,10 @@ export interface ClassCardProps {
   isBusy: boolean;
 }
 
+/**
+ * One class as a card: name, live seat counts, the bar, and the apply button.
+ * "Almost full" only applies once seats are actually gone.
+ */
 export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassCardProps) {
   const { t, isBangla } = useI18n();
   const [hovered, setHovered] = useState(false);
@@ -80,11 +84,9 @@ export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassC
       </div>
 
       {/* The figure is the reason the card exists, so it is the largest thing
-          on it after the name. The two supporting counts are labelled rather
-          than left as bare numbers beside coloured dots: at caption size a
-          Bengali numeral is small enough that an unlabelled one is unreadable,
-          and `leading-5` gives the glyphs the full line box instead of the
-          clipped 16px the caption token allows. */}
+          after the name. The two supporting counts are labelled rather than
+          left as bare numbers, and `leading-5` gives Bengali glyphs the full
+          line box instead of the clipped 16px the caption token allows. */}
       <div className="mt-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
           <span
@@ -163,8 +165,7 @@ export function ClassCard({ cls, myStatus, onApply, isApplying, isBusy }: ClassC
         )}
       </div>
 
-      {/* A hairline that warms on hover, so the card answers the pointer
-          without moving its content. */}
+      {/* A hairline that warms on hover, without moving the content. */}
       <span
         aria-hidden
         className={

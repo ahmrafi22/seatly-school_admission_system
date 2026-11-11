@@ -7,13 +7,7 @@ import { useThemeMode, applyThemeWithTransition } from "@/components/application
 import { useI18n } from "@/src/i18n/LanguageProvider";
 import type { Lang } from "@/src/i18n/copy";
 
-/**
- * Language and theme, side by side, in the header.
- *
- * Both are real preferences rather than decorations: a Bangladeshi parent may
- * want Bangla in daylight, and a student checking seats at midnight may want
- * the dark surface. Both persist across refreshes.
- */
+/** Language and theme in the header. Both persist across refreshes. */
 export function Toolbar({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { lang, setLang, t } = useI18n();
   const theme = useThemeMode();

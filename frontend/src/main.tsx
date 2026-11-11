@@ -1,12 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-// BoardUI foundations, with the application layer imported inside globals.css
-// so its `@theme` overrides are registered by Tailwind.
+// BoardUI foundations; the application layer is imported inside globals.css so
+// its `@theme` overrides are registered by Tailwind.
 import "@/styles/globals.css";
 
-// Self-hosted faces: no third-party font request, no layout shift when the
-// network is slow, and the same files serve both languages.
+// Self-hosted faces: no third-party font request and no layout shift.
 import "@fontsource-variable/inter";
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
@@ -21,11 +20,8 @@ import App from "@/src/App";
 import { LanguageProvider } from "@/src/i18n/LanguageProvider";
 
 /**
- * Apply the stored theme before the first paint.
- *
- * The toggle component does this on mount, but that is one frame too late: the
- * page would flash white before flipping to dark. Reading localStorage here,
- * synchronously, costs nothing and removes the flash entirely.
+ * Apply the stored theme before the first paint. The toggle does this on mount,
+ * which is a frame too late and flashes white.
  */
 try {
   const stored = window.localStorage.getItem("boardui:theme");

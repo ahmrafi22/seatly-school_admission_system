@@ -1,7 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-// jsdom has no matchMedia, and the theme toggle reads it to decide whether to
-// animate. A stub keeps the components mountable.
+// jsdom has no matchMedia; the theme toggle reads it.
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
@@ -16,9 +15,7 @@ Object.defineProperty(window, "matchMedia", {
   }),
 });
 
-// The segmented control measures its selected segment with a ResizeObserver.
-// jsdom ships none, so a no-op implementation lets it mount; the measurement
-// itself is visual and is covered by the browser checks instead.
+// The segmented control measures with a ResizeObserver, which jsdom lacks.
 class ResizeObserverStub {
   observe() {}
   unobserve() {}

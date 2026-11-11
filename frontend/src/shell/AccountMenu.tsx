@@ -10,15 +10,8 @@ import { useI18n } from "@/src/i18n/LanguageProvider";
 import { maskStudentId } from "@/src/lib/format";
 
 /**
- * The account control in the top bar.
- *
- * There is no name and no account record — the 17-digit number *is* the
- * identity — so the trigger is a neutral avatar and the panel is where that
- * number is revealed in full, grouped for reading, plus the one action that
- * ends the session.
- *
- * The number is the only credential a parent has, so it is shown as a code:
- * monospaced, tabular, selectable in one click, and always LTR even in Bangla.
+ * The account control in the top bar. There is no account record, so the panel
+ * reveals the 17-digit number, grouped for reading, plus sign out.
  */
 export function AccountMenu({
   studentId,

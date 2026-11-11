@@ -11,26 +11,12 @@ import { readableError } from "@/src/lib/errors";
 import { formatTime } from "@/src/lib/format";
 
 /**
- * The admission-fee dialog.
+ * The admission-fee dialog. Confirming is irreversible, so the fee is paid by
+ * holding a button rather than clicking it. The panel then switches to a
+ * confirmed state in place, instead of opening a screen the reader has to find.
  *
- * Confirming is the one irreversible thing a student can do here, so the
- * dialog is built around a deliberate gesture: the fee is confirmed by
- * *holding* a button, not by clicking it. A click is too easy to make by
- * accident on a phone held in one hand while carrying something else.
- *
- * The dialog then has two faces:
- *
- *   1. before — what is being paid for, and the hold-to-confirm control;
- *   2. after  — the green tick, drawn rather than shown, and the seat is
- *      secured.
- *
- * The second face does not open a separate screen the reader has to find: it
- * takes over the same panel, so the thing that changed is the only thing that
- * moved.
- *
- * The state lives inside the modal rather than in this wrapper, because React
- * Aria unmounts a closed modal's contents — so a hold confirmed in one visit
- * cannot read as a hold confirmed in the next.
+ * State lives inside the modal because React Aria unmounts closed contents, so
+ * a confirmation cannot leak into the next visit.
  */
 export function AdmissionFeeDialog({
   isOpen,
@@ -69,8 +55,7 @@ function FeePanel({
   const close = useModalClose();
   const [state, setState] = useState<"idle" | "pending" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
-  // Bumped after a failure so the hold control starts over rather than
-  // remembering a hold that already completed.
+  // Bumped after a failure so the hold control starts over.
   const [attempt, setAttempt] = useState(0);
 
   const confirm = async () => {
@@ -124,9 +109,7 @@ function FeePanel({
         closeLabel={t.common.close}
       />
       <ModalBody>
-        {/* What is being paid for. Three facts and no more: the class, the
-            application reference, and the moment the seat goes back into the
-            pool if nothing is confirmed. */}
+        {/* Class, application reference, and when the seat is released. */}
         <dl className="divide-y divide-separator-border rounded-2xl border border-border-button-default bg-background-secondary-default px-4">
           <Row label={t.hold.classLabel} value={hold.className} />
           <Row label={t.hold.seatNumber} value={hold.holdId.slice(0, 8)} mono />

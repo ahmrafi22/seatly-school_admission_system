@@ -1,34 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cx } from "@/utils/cx";
 
-/**
- * How long the button must be held down.
- *
- * Long enough that the gesture is unmistakable, short enough that it does not
- * become a chore: 1.5 seconds. A press that falls short simply does nothing.
- */
+/** How long the button must be held down. */
 export const HOLD_MS = 1500;
 
 /**
- * A button that fires only when it is *held*, not clicked.
- *
- * Confirming an admission is irreversible — the seat leaves the pool and the
- * payment stands — so the act has to be deliberate. A tap is too easy to make
- * by accident on a phone held in one hand while carrying something else.
- * Holding requires a sustained, intentional movement.
- *
- * How it behaves:
- *
- *   - press and hold: a fill sweeps across the button from the leading edge.
- *     Releasing early snaps it back to empty and nothing happens.
- *   - the fill reaches the end: the hold is complete and `onComplete` fires.
- *   - keyboard: `Space` and `Enter` start and stop the hold the same way, so
- *     the gesture is not mouse-only. The key must be *held*, and the browser's
- *     auto-repeat is what drives it — which is why the fill is measured from
- *     elapsed time rather than from the number of events received.
- *
- * The fill is functional feedback rather than decoration, so it survives
- * `prefers-reduced-motion`; only its easing is dropped.
+ * A button that fires only when held, not clicked. Confirming an admission is
+ * irreversible, so the gesture has to be deliberate.
  */
 export function HoldToConfirm({
   label,
@@ -48,24 +26,20 @@ export function HoldToConfirm({
   const fillRef = useRef<HTMLSpanElement | null>(null);
   const startRef = useRef(0);
   const doneRef = useRef(false);
-  // The completion callback is read through a ref so that a parent re-render
-  // cannot restart the hold mid-gesture.
+  // Read through a ref so a parent re-render cannot restart the hold.
   const completeRef = useRef(onComplete);
   useEffect(() => {
     completeRef.current = onComplete;
   }, [onComplete]);
 
-  // The fill is written straight to the element rather than through state: it
-  // changes every frame, and re-rendering the tree sixty times a second to
-  // move one rectangle would be absurd.
+  // Written straight to the element: state would re-render every frame.
   const paint = useCallback((value: number) => {
     const el = fillRef.current;
     if (el) el.style.transform = `scaleX(${value})`;
   }, []);
 
-  // One animation frame drives the whole fill, so the progress is a function
-  // of elapsed time rather than of how many events fired. That matters on the
-  // keyboard path, where the repeat rate is the browser's to choose.
+  // Progress is measured from elapsed time, not from event count, because the
+  // keyboard repeat rate is the browser's to choose.
   useEffect(() => {
     if (!holding) return;
 
@@ -92,8 +66,7 @@ export function HoldToConfirm({
 
   const start = useCallback(() => {
     if (doneRef.current || disabled) return;
-    // The fill tracks the clock exactly while the hold is live, so the
-    // transition is off; it is switched back on only for the snap-back.
+    // Transition off while live, so the fill tracks the clock exactly.
     const el = fillRef.current;
     if (el) el.style.transition = "none";
     startRef.current = performance.now();
@@ -103,8 +76,6 @@ export function HoldToConfirm({
 
   const stop = useCallback(() => {
     if (doneRef.current) return;
-    // A released hold snaps back rather than staying where it was: the fill
-    // is a live readout of the gesture, not a progress bar with a memory.
     const el = fillRef.current;
     if (el) {
       el.style.transition = "transform 200ms ease-out";
@@ -115,8 +86,7 @@ export function HoldToConfirm({
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== " " && event.key !== "Enter") return;
-    // The browser's auto-repeat drives the fill; preventDefault stops Space
-    // from also scrolling the page.
+    // preventDefault also stops Space from scrolling the page.
     event.preventDefault();
     if (event.repeat) return;
     start();
@@ -131,9 +101,8 @@ export function HoldToConfirm({
   return (
     <button
       type="button"
-      // A plain button rather than the kit's Button: that component styles a
-      // click affordance, and here the press state *is* the affordance. The
-      // tokens below are the ones the kit's primary button wears.
+      // Plain button rather than the kit's Button: the press state is the
+      // affordance here. Classes below are the primary button's tokens.
       className={cx(
         "group relative flex h-12 w-full touch-none cursor-pointer select-none overflow-hidden rounded-2xl",
         "bg-accent-800 text-text-white shadow-xs dark:bg-accent-900",
@@ -143,8 +112,7 @@ export function HoldToConfirm({
       )}
       onPointerDown={(event) => {
         if (event.pointerType === "mouse" && event.button !== 0) return;
-        // preventDefault stops the browser selecting the label under a resting
-        // finger, so focus is taken by hand.
+        // preventDefault stops text selection, so focus is taken by hand.
         event.preventDefault();
         event.currentTarget.focus();
         event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -159,11 +127,6 @@ export function HoldToConfirm({
       onContextMenu={(event) => event.preventDefault()}
       disabled={disabled}
     >
-      {/* The fill. It grows from the leading edge, so it reads as the hold
-          travelling rather than as a bar that is merely getting longer. The
-          button's own track is the darker accent; the fill is the gradient the
-          primary button wears, so a completed hold ends on exactly the button
-          the reader was expecting. */}
       <span
         ref={fillRef}
         aria-hidden

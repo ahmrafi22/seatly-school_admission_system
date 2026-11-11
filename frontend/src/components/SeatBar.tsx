@@ -3,16 +3,8 @@ import type { ClassSummary } from "@/src/lib/api";
 import { occupancyPercent } from "@/src/lib/format";
 
 /**
- * The seat inventory, drawn as one bar split into its three parts.
- *
- * This is the product's central fact — how many seats are gone, how many are
- * only temporarily held, how many are still free — so it is shown as a single
- * object rather than three unrelated numbers. Held seats are a lighter tint of
- * the confirmed colour on purpose: both are "taken right now", but only one is
- * permanent, and the bar should say so without a legend.
- *
- * `flex-grow` carries the proportions so a change animates as the parts slide
- * rather than snapping.
+ * The seat inventory as one bar split into confirmed, held and free. Held is a
+ * lighter tint of confirmed: both are taken now, but only one is permanent.
  */
 export function SeatBar({
   cls,

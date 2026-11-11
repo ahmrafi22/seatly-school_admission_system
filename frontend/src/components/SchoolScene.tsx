@@ -1,23 +1,10 @@
 /**
- * A paper-cut schoolscape for the foot of the identity screen.
+ * The paper-cut schoolscape at the foot of the identity screen. One SVG so the
+ * pediment, door and flag share a coordinate system.
  *
- * Drawn as one SVG rather than a stack of positioned `div`s: the building needs
- * a pediment, an arched door and a flag, and those are three paths in a single
- * coordinate system instead of nine absolutely-placed boxes that each have to
- * be re-tuned at every breakpoint.
- *
- * The band's height is tied to the viewport (`14vw`) rather than fixed, and the
- * SVG uses `xMidYMax slice`. Those two choices together are what stop the art
- * being sliced:
- *
- *   - A fixed height crops differently on every screen. At 1440px the scale is
- *     driven by width, so the school grew taller than its band and the flag —
- *     the topmost thing in the drawing — was the first thing to disappear.
- *   - A height that scales with width keeps the band *taller* than the drawing
- *     at every width, so the scale is driven by height instead and the crop
- *     happens on the left and right, where there is only sky and outer trees.
- *
- * Nothing here is measured by the layout, so it cannot push the form around.
+ * The height scales with the viewport (`14vw`) and the SVG uses `xMidYMax slice`,
+ * so the band is always taller than the drawing and the crop happens on the
+ * sides, where there is only sky. A fixed height cropped the flag off at 1440px.
  */
 export function SchoolScene() {
   return (
@@ -38,10 +25,8 @@ export function SchoolScene() {
         {/* The ground the school stands on. */}
         <rect y="138" width="1200" height="12" className="fill-accent-200 dark:fill-accent-900" />
 
-        {/* Trees, one each side, framing the building. Kept inside the middle
-            of the viewBox so that a narrow screen — where the drawing is
-            cropped from the sides, not the top — still shows whole trees
-            rather than half a tree sliced by the frame edge. */}
+        {/* Trees, kept inside the middle of the viewBox so a side-cropped
+            narrow screen still shows whole trees. */}
         <g className="fill-accent-300 dark:fill-accent-800">
           <circle cx="352" cy="112" r="21" />
           <circle cx="331" cy="121" r="14" />
@@ -94,8 +79,7 @@ export function SchoolScene() {
         <circle cx="609" cy="123" r="1.8" className="fill-accent-50 dark:fill-accent-950" />
         <rect x="574" y="137" width="52" height="4" rx="2" className="fill-accent-300 dark:fill-accent-800" />
 
-        {/* Shrubs along the ground line, kept in the safe middle band with the
-            trees so a side-cropped phone view does not show a half pill. */}
+        {/* Shrubs, kept in the same safe middle band as the trees. */}
         <g className="fill-accent-300 dark:fill-accent-800">
           <rect x="302" y="131" width="38" height="9" rx="4.5" />
           <rect x="424" y="133" width="28" height="7" rx="3.5" />

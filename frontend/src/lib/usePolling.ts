@@ -2,20 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Polls an async source on an interval and exposes enough state for the
- * interface to be honest about freshness.
- *
- * Deliberately not a data-fetching library: the whole requirement here is
- * "seat counts update every few seconds without a reload, and a dead server
- * must be visible" — which needs exactly four things, and a cache layer would
- * obscure all of them:
- *
- *   1. a first load that is distinguishable from a refresh,
- *   2. the timestamp of the last *successful* read,
- *   3. a failure count that survives a single blip,
- *   4. cancellation of in-flight work on unmount.
- *
- * Polling pauses while the tab is hidden and reads immediately when it becomes
- * visible again, so a background tab does not hammer the API.
+ * interface to be honest about freshness: a first load distinct from a refresh,
+ * the last successful read, a failure count that survives one blip, and
+ * cancellation on unmount. Polling pauses while the tab is hidden.
  */
 export interface PollState<T> {
   data: T | null;
@@ -44,15 +33,13 @@ export function usePolling<T>(
   const [failures, setFailures] = useState(0);
   const [error, setError] = useState<Error | null>(null);
 
-  // Refs, not state: the loop must always call the newest fetcher without
-  // restarting, and must be able to stop itself on unmount.
+  // Refs, not state: the loop must call the newest fetcher without restarting.
   const fetcherRef = useRef(fetcher);
   const inFlight = useRef(false);
   const alive = useRef(true);
   const timer = useRef<number | null>(null);
 
-  // Keep the ref current in an effect rather than during render, so the
-  // component stays a pure function of its props.
+  // Keep the ref current in an effect so the component stays pure.
   useEffect(() => {
     fetcherRef.current = fetcher;
   }, [fetcher]);
@@ -65,8 +52,7 @@ export function usePolling<T>(
   }, []);
 
   const run = useCallback(async () => {
-    // Overlapping polls would stack up against a slow server; skipping a tick
-    // is better than queueing one.
+    // Overlapping polls would stack up against a slow server.
     if (inFlight.current) return;
     inFlight.current = true;
     setIsFetching(true);
@@ -94,8 +80,7 @@ export function usePolling<T>(
   useEffect(() => {
     let cancelled = false;
 
-    // One self-scheduling chain, so a slow response delays the next tick
-    // instead of piling up behind it.
+    // One self-scheduling chain, so a slow response delays the next tick.
     const tick = async () => {
       if (cancelled) return;
       if (!document.hidden) {
@@ -109,8 +94,7 @@ export function usePolling<T>(
 
     const onWake = () => {
       if (document.hidden) return;
-      // Returning to the tab: the data is certainly stale, so read at once
-      // rather than waiting out the rest of the interval.
+      // Returning to the tab: the data is stale, so read at once.
       void run();
     };
 

@@ -20,12 +20,9 @@ function readStoredStudentId(): string {
 }
 
 /**
- * The student identity, persisted in localStorage.
- *
- * There is no login: the 17-digit registration number *is* the identity, and
- * the API trusts the `X-Student-Id` header. Persisting it means a refresh, or a
- * browser restart, shows the same student's applications — which is a stated
- * requirement, not a convenience.
+ * The student identity, persisted in localStorage so a refresh or a browser
+ * restart shows the same applications. There is no login: the 17-digit number
+ * is the identity, and the API trusts the `X-Student-Id` header.
  */
 export function useStudentId() {
   const [studentId, setStudentIdState] = useState<string>(readStoredStudentId);

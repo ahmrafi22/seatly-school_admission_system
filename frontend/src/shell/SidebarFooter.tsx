@@ -11,16 +11,11 @@ import { useI18n } from "@/src/i18n/LanguageProvider";
 import type { Lang } from "@/src/i18n/copy";
 
 /**
- * The sidebar footer: the two preferences that belong to the device.
+ * The sidebar footer: the two device preferences. The identity has its own
+ * control in the top bar, so repeating it here would be the same fact twice.
  *
- * The identity used to live here as well, but it now has its own control in the
- * top bar — an avatar that reveals the number — so repeating it in the rail
- * would be the same fact twice, competing with the navigation.
- *
- * Collapsed, the rail has 36px of usable width, which is enough for two stacked
- * icon buttons and not enough for a segmented control. Language becomes a
- * single button that swaps to the other language, labelled with the language it
- * will switch *to*, so the target is never ambiguous.
+ * Collapsed, the rail is too narrow for a segmented control, so language becomes
+ * a single button labelled with the language it switches to.
  */
 export function SidebarFooter({ collapsed = false }: { collapsed?: boolean }) {
   const { lang, setLang, t } = useI18n();

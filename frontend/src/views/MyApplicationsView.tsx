@@ -8,11 +8,9 @@ import { Freshness } from "@/src/components/Freshness";
 import { useNow } from "@/src/lib/usePolling";
 
 /**
- * The student's own applications.
- *
- * Kept in sync by polling rather than by a cache, so a hold that expires while
- * this tab is open turns EXPIRED on its own — the countdown drives the chip,
- * and the next poll confirms it with the server.
+ * The student's own applications. Kept in sync by polling, so a hold that
+ * expires while this tab is open turns EXPIRED on its own: the countdown drives
+ * the chip and the next poll confirms it with the server.
  */
 export function MyApplicationsView({
   studentId,

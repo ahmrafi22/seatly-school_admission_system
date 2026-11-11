@@ -21,31 +21,14 @@ export type Tab = "classes" | "mine" | "manage";
 /**
  * The application shell, built on the BoardUI sidebar.
  *
- * The kit ships its sidebar as a floating card — inset from every viewport
- * edge, rounded, elevated, with the page ground visible around it. In a
- * three-item app that reads as a panel parked next to the page rather than as
- * the page's own navigation, so it is docked instead: flush to the left edge,
- * full height, square corners, no elevation. The only separation is a single
- * hairline on the inner edge.
+ * The kit ships its sidebar as a floating, inset card. That reads as a panel
+ * parked next to the page in a three-item app, so it is docked: flush left, full
+ * height, no elevation, separated by one hairline. It stays expanded because a
+ * rail of unlabelled icons makes the reader decode it before they can navigate.
  *
- * It is expanded, permanently: a rail that greets every visit as a stack of
- * unlabelled icons makes the reader decode it before they can navigate, and
- * with three destinations there is nothing to be gained by hiding their names.
- * There is no collapse control — the labelled rail is the only desktop
- * navigation, so it never shrinks.
- *
- * The rail sits in flow — an overlay would mean landing on a dimmed page under
- * a panel every visit — so it holds its own width and the content flexes
- * beside it.
- *
- * Two things had to be adapted rather than accepted:
- *
- *   - The kit renders its own workspace switcher and team card in the top and
- *     bottom slots. Neither exists in this product, so the student's identity
- *     and the language/theme controls take those places instead of sitting
- *     next to a fake workspace.
- *   - Below `lg` a labelled rail would eat most of a phone, so the same sidebar
- *     is rendered inside a modal drawer and a single menu button opens it.
+ * Two slots are repurposed: the kit's workspace switcher and team card do not
+ * exist here, so the student's identity and the language/theme controls take
+ * those places. Below `lg` the same sidebar renders inside a modal drawer.
  */
 export function AppShell({
   tab,
@@ -71,9 +54,8 @@ export function AppShell({
     [t],
   );
 
-  // The admin section is pinned to the rail's foot, directly above the
-  // preferences: it serves a different reader — the school's office, not the
-  // student — so it does not sit between the student's two destinations.
+  // Admin is pinned to the rail's foot: it serves the school office, not the
+  // student, so it does not sit between the student's two destinations.
   const bottomItems: DashboardNavItem[] = useMemo(
     () => [
       { key: "manage", label: t.nav.manage, icon: RiSettings3Line, badge: t.nav.adminBadge },
@@ -100,14 +82,7 @@ export function AppShell({
         />
 
         <div className="flex min-h-[calc(100dvh-var(--navbar-height))]">
-          {/* Desktop rail, docked and in flow, always expanded.
-              The slot is the rail's own 260px — the labelled navigation is the
-              only desktop navigation, so the content column's left edge is the
-              same pixel on every visit.
-
-              No vertical divider: the navbar's rule above already separates the
-              chrome from the page, and a line down a dark ground reads as a seam
-              rather than as structure. */}
+          {/* Desktop rail: in flow, fixed 260px, no vertical divider. */}
           <div className="sticky top-[var(--navbar-height)] hidden h-[calc(100dvh-var(--navbar-height))] w-[260px] shrink-0 lg:block">
             <DashboardSidebar
               docked
@@ -166,22 +141,9 @@ export function AppShell({
 }
 
 /**
- * The bar across the top of the window.
- *
- * It spans the full width, including the strip above the sidebar, and its
- * bottom rule runs the whole way across. That is deliberate: the rule is the
- * one line that separates "chrome" from "page", and a rule that stopped at the
- * sidebar's edge would say the sidebar is a separate surface rather than part
- * of the same window. With no vertical divider, this rule is also what holds
- * the two regions together visually.
- *
- * Because the rule crosses the sidebar's column, the brand cannot live inside
- * the sidebar's top row — it would be cut in half by the line. So the wordmark
- * sits here, in the bar, on the sidebar's side of it. That is why the sidebar's
- * own header slot is no longer used on desktop.
- *
- * On a phone the bar is the only navigation surface, so it also carries the
- * drawer button.
+ * The top bar. It spans the full width and its bottom rule runs the whole way
+ * across, which is the one line separating chrome from page. On a phone it also
+ * carries the drawer button.
  */
 function TopBar({
   onOpen,

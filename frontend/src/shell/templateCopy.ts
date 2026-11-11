@@ -1,13 +1,9 @@
 import type { Copy } from "@/src/i18n/copy";
 
 /**
- * The BoardUI sidebar and its menus carry their own English copy ("Quick
- * Search", "Support", "Settings", "No results"). Rather than fork the
- * component, the kit's `TemplateCopyProvider` is given a lookup that swaps
- * those strings for the active language.
- *
- * Anything not in the map is returned unchanged, so a string the kit adds in a
- * future version still renders in English instead of disappearing.
+ * The BoardUI sidebar and its menus carry their own English copy. Rather than
+ * fork the component, the kit's `TemplateCopyProvider` gets a lookup that swaps
+ * those strings for the active language. Unknown strings pass through.
  */
 export function buildTemplateTranslator(t: Copy): (text: string) => string {
   const map: Record<string, string> = {

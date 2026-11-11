@@ -1,9 +1,7 @@
 /**
- * Typed client for the admission API.
- *
- * Every call returns either data or throws an `ApiError` that already carries a
- * sentence a person can read. Nothing in the UI has to inspect a status code to
- * decide what to say, and no raw fetch error ever reaches the screen.
+ * Typed client for the admission API. Every call returns data or throws an
+ * `ApiError` that already carries a sentence a person can read, so the UI never
+ * has to inspect a status code to decide what to say.
  */
 
 export type HoldStatus = "HELD" | "CONFIRMED" | "EXPIRED" | "CANCELLED";
@@ -41,9 +39,9 @@ export interface MyHold {
 }
 
 /**
- * Base URL of the API. Set at build time with VITE_API_BASE_URL. The fallback
- * is `/api`, which the dev server proxies to the backend and nginx proxies in
- * the container — so a build with no environment at all still works.
+ * Base URL of the API, set at build time with VITE_API_BASE_URL. The fallback is
+ * `/api`, which the dev server and nginx both proxy, so a build with no
+ * environment at all still works.
  */
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(/\/+$/, "");
 
@@ -123,8 +121,7 @@ async function request<T>(
 
   if (!response.ok) {
     const problem = (body ?? {}) as ProblemBody;
-    // Prefer the server's own `detail`: it names the class, the seat count and
-    // the reason. Only fall back to a generic line when there is no body.
+    // Prefer the server's own detail: it names the class and the reason.
     const message =
       problem.detail ??
       problem.title ??

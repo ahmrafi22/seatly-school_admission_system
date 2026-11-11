@@ -15,33 +15,19 @@ import { SchoolScene } from "@/src/components/SchoolScene";
 import { Toolbar } from "@/src/components/Toolbar";
 
 /**
- * The first screen: capture the 17-digit registration number.
+ * The first screen: capture the 17-digit registration number. No account and no
+ * password, but it validates honestly and explains a failure in a sentence.
  *
- * No account, no password. The number is the identity, so this screen has one
- * job and does it with as little ceremony as possible — but it validates
- * honestly (digits only, exactly 17) and explains the failure in a sentence
- * rather than a red border alone.
- *
- * Two rules about *when* it says something, both learned the hard way:
- *
- *   - Blurring an empty field is not a mistake. It is what happens when
- *     someone clicks into the box to see what it wants and then clicks away.
- *     The first version validated on every blur and turned the field red for
- *     that, which reads as "you did something wrong" before you have typed a
- *     single character. Empty blur now says nothing.
- *   - The digits-remaining counter only exists once there is something to
- *     count. It is not a permanent fixture of the field: at rest the field is
- *     empty and quiet, and the counter appears with the first keystroke and
- *     leaves with the last.
+ * Blurring an empty field is not an error, so it says nothing. The
+ * digits-remaining counter only appears once there is something to count.
  */
 export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => void }) {
   const { t, tpl } = useI18n();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // One source of truth: whatever the student types is normalised to at most
-  // 17 digits before it is stored, so the displayed value and the validated
-  // value can never disagree.
+  // One source of truth: the typed value is normalised to at most 17 digits
+  // before it is stored, so the displayed and validated values cannot disagree.
   const sanitize = (raw: string) => raw.replace(/\D/g, "").slice(0, STUDENT_ID_LENGTH);
 
   const validate = (raw: string): string | null => {
@@ -111,8 +97,8 @@ export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => vo
                 onChange={(next) => {
                   const clean = sanitize(next);
                   setValue(clean);
-                  // Correct a message that is already on screen, but never
-                  // raise one while the student is still typing.
+                  // Correct a message already on screen, but never raise one
+                  // while the student is still typing.
                   if (error) setError(clean.length === 0 ? null : validate(clean));
                 }}
                 onBlur={() => {
@@ -120,25 +106,18 @@ export function IdentityGate({ onSubmit }: { onSubmit: (studentId: string) => vo
                 }}
                 isInvalid={Boolean(error)}
                 errorMessage={error ?? undefined}
-                // No static hint under the field, and no permanent caption in
-                // it. At rest the field shows only its placeholder; the counter
-                // appears in the trailing slot with the first keystroke and
-                // leaves when the number is complete. A fixed "exactly 17
-                // digits" line restated what the placeholder already said, and
-                // it was the one piece of text on this screen that never
-                // changed in response to anything the student did.
+                // No static hint and no permanent caption: at rest the field
+                // shows only its placeholder, and the counter appears with the
+                // first keystroke.
                 trailingAddon={
                   typed ? (
                     remaining === 0 ? (
                       <span
                         className="flex shrink-0 items-center gap-1 ps-3 text-caption-1-medium whitespace-nowrap text-accent-700 dark:text-accent-400"
                         // The word is dropped on narrow screens to protect the
-                        // number itself: 17 monospace digits plus a tick plus a
-                        // label does not fit a 320px phone, and truncating the
-                        // number to keep a redundant word is the wrong trade.
-                        // The tick stays as the visible confirmation, so the
-                        // label moves to the accessible name instead of
-                        // vanishing.
+                        // number: 17 monospace digits plus a label does not fit
+                        // a 320px phone. The tick stays, and the label moves to
+                        // the accessible name.
                         aria-label={t.identity.complete}
                       >
                         <RiCheckboxCircleLine className="size-4" aria-hidden />

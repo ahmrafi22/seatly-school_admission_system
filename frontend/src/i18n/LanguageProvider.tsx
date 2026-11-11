@@ -20,11 +20,9 @@ interface LanguageContextValue {
   locale: string;
   isBangla: boolean;
   /**
-   * Fill `{name}` placeholders and localize any digit in the result.
-   *
-   * Copy holds no numerals of its own: the interface decides at render time
-   * whether a number reads as `17` or `১৭`, so a Bangla sentence shown in
-   * English mode cannot leak Bengali digits into it.
+   * Fill `{name}` placeholders and localize any digit in the result. Copy holds
+   * no numerals of its own; the interface decides at render time whether a
+   * number reads as `17` or `১৭`.
    */
   tpl: (template: string, vars?: Record<string, string | number>) => string;
   /** A number, formatted for the current language. */
@@ -41,8 +39,7 @@ function readStoredLang(): Lang {
   } catch {
     // Storage can be blocked; the default is fine.
   }
-  // A Bengali-speaking visitor with no stored choice is most likely here for
-  // the Bangla. Only used on the very first visit.
+  // A Bengali-speaking visitor with no stored choice most likely wants Bangla.
   if (navigator.language?.toLowerCase().startsWith("bn")) return "bn";
   return "en";
 }
@@ -52,8 +49,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = lang === "bn" ? "bn" : "en";
-    // Both languages are left-to-right; setting it explicitly stops a stale
-    // `dir` from a browser extension or an earlier build.
+    // Both languages are LTR; setting it stops a stale `dir` from lingering.
     document.documentElement.dir = "ltr";
   }, [lang]);
 
@@ -68,9 +64,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<LanguageContextValue>(() => {
     const n = (input: number | string) => {
-      // Group thousands the way each language writes them, then localize the
-      // digits. Without this, a limit reads "10000" in English and the
-      // separator disappears from every number the interface formats.
+      // Group thousands per language, then localize the digits.
       const formatted =
         typeof input === "number"
           ? new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(input)
@@ -82,8 +76,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       return template.replace(/\{(\w+)\}/g, (match, key: string) => {
         const replacement = vars?.[key];
         if (replacement === undefined) return match;
-        // Numbers go through the digit localizer; strings are left alone so a
-        // class name is never re-encoded.
+        // Numbers go through the localizer; strings are left alone.
         return typeof replacement === "number" ? n(replacement) : replacement;
       });
     };

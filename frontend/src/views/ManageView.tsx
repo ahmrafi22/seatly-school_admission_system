@@ -23,24 +23,17 @@ import { Freshness, OfflineBanner } from "@/src/components/Freshness";
 import { readableError } from "@/src/lib/errors";
 import { occupancyPercent } from "@/src/lib/format";
 
-// Mirrors the server's own limits, so the common mistakes are caught before a
-// round trip and the copy can name the exact bounds.
+// Mirrors the server's limits so common mistakes are caught before a round trip.
 const MAX_NAME = 200;
 const MIN_SEATS = 1;
 const MAX_SEATS = 10_000;
 
 /**
- * Class administration.
+ * Class administration. Every class is shown with its full inventory as one
+ * card. Creating is behind a dialog so the default view is the numbers.
  *
- * The page's own subject is the seat data: every class with its full inventory
- * — confirmed, on hold, free, and how full it has run — laid out as one card
- * each. Creating is a deliberate act rather than a standing invitation, so the
- * form lives behind the "Add class" button and opens as a dialog; the default
- * view is the numbers, not a blank form waiting to be filled.
- *
- * Validation inside the dialog mirrors the server's own rules (name required,
- * 1–10,000 seats) so the common mistakes are caught before a round trip, and
- * the server's message still wins if it disagrees.
+ * The dialog mirrors the server's own limits (name required, 1-10,000 seats) so
+ * common mistakes are caught before a round trip.
  */
 export function ManageView({ onCreated }: { onCreated: () => void }) {
   const { t } = useI18n();
@@ -154,11 +147,9 @@ export function ManageView({ onCreated }: { onCreated: () => void }) {
 }
 
 /**
- * One class's seat inventory, stated in full: the name and how full it has
- * run, the same three-part bar the students see, and beneath it the counts
- * that bar is drawn from. Held is shown separately from confirmed on purpose —
- * both are "taken right now", but only one is permanent, and an administrator
- * needs to see how much of the fullness is still refundable.
+ * One class's seat inventory: name, fill percentage, the seat bar, and the
+ * counts behind it. Held is separate from confirmed because only one is
+ * permanent.
  */
 function ClassStatCard({ cls }: { cls: ClassSummary }) {
   const { t, n } = useI18n();
@@ -216,10 +207,8 @@ function StatCardSkeleton() {
 }
 
 /**
- * The create-class dialog. The form lives here, not on the page, and its
- * state lives inside the panel — React Aria unmounts a closed modal's
- * contents, so every visit starts blank and a failed attempt never leaks
- * into the next one.
+ * The create-class dialog. State lives inside the panel because React Aria
+ * unmounts closed contents, so every visit starts blank.
  */
 function CreateClassDialog({
   isOpen,
