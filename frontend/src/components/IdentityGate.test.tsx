@@ -70,6 +70,36 @@ describe("IdentityGate", () => {
     expect(onSubmit).toHaveBeenCalledWith("20152691234567890");
   });
 
+  it("does not scold an empty field that was only clicked into", async () => {
+    const user = userEvent.setup();
+    const { onSubmit, input } = renderGate();
+
+    // Click in, then leave by keyboard. Nothing typed.
+    await user.click(input);
+    await user.tab();
+
+    expect(input).not.toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByText(/enter your 17-digit/i)).not.toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("counts down only once there is something to count", async () => {
+    const user = userEvent.setup();
+    const { input } = renderGate();
+
+    expect(screen.queryByText(/digits? to go/i)).not.toBeInTheDocument();
+
+    await user.type(input, "2015");
+    expect(screen.getByText("13 digits to go")).toBeInTheDocument();
+
+    await user.type(input, "269123456789");
+    expect(screen.getByText("1 digit to go")).toBeInTheDocument();
+
+    await user.type(input, "0");
+    expect(screen.queryByText(/digits? to go/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/complete/i)).toBeInTheDocument();
+  });
+
   it("switches its own copy to Bangla", async () => {
     const user = userEvent.setup();
     render(
@@ -80,8 +110,6 @@ describe("IdentityGate", () => {
 
     await user.click(screen.getByRole("radio", { name: "বাংলা" }));
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "আপনার জন্ম নিবন্ধন নম্বর",
-    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("ভর্তি শুরু করুন");
   });
 });
