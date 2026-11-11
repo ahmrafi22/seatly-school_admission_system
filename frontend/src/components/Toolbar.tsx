@@ -14,10 +14,40 @@ import type { Lang } from "@/src/i18n/copy";
  * want Bangla in daylight, and a student checking seats at midnight may want
  * the dark surface. Both persist across refreshes.
  */
-export function Toolbar({ className }: { className?: string }) {
+export function Toolbar({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { lang, setLang, t } = useI18n();
   const theme = useThemeMode();
   const dark = theme === "dark";
+
+  if (compact) {
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          aria-label={dark ? t.theme.light : t.theme.dark}
+          aria-pressed={dark}
+          title={dark ? t.theme.light : t.theme.dark}
+          onClick={(event) => {
+            void applyThemeWithTransition(dark ? "light" : "dark", {
+              origin:
+                event.clientX === 0 && event.clientY === 0
+                  ? null
+                  : { x: event.clientX, y: event.clientY },
+              element: event.currentTarget,
+              duration: 620,
+            });
+          }}
+          className="grid size-9 cursor-pointer place-items-center rounded-2lg text-foreground-icon-secondary transition-colors hover:bg-background-secondary-hover hover:text-foreground-icon-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:outline-none"
+        >
+          {dark ? (
+            <RiSunLine className="size-4.5" aria-hidden />
+          ) : (
+            <RiMoonLine className="size-4.5" aria-hidden />
+          )}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
